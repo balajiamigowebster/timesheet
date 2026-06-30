@@ -10,6 +10,17 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// Middleware to strip cPanel subfolder prefix from req.url
+app.use((req, res, next) => {
+  if (req.url.startsWith('/attendancetimesheet')) {
+    req.url = req.url.substring('/attendancetimesheet'.length);
+    if (!req.url.startsWith('/')) {
+      req.url = '/' + req.url;
+    }
+  }
+  next();
+});
+
 // Helper functions for validating fields
 const isValidEmail = (email) => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
