@@ -4,9 +4,9 @@ require('dotenv').config();
 // Create the connection pool
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'student_staff_timesheet_db',
+  user: process.env.DB_USER || 'amigoweb_timesheet',
+  password: process.env.DB_PASSWORD || 'Aammigo@123',
+  database: process.env.DB_NAME || 'amigoweb_timesheet',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
