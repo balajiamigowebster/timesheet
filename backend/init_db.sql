@@ -11,7 +11,7 @@ CREATE TABLE students (
   id INT AUTO_INCREMENT PRIMARY KEY,
   student_id VARCHAR(50) NOT NULL UNIQUE,
   name VARCHAR(100) NOT NULL,
-  email VARCHAR(100) NOT NULL UNIQUE,
+  phone VARCHAR(50) NOT NULL UNIQUE,
   department VARCHAR(100) NOT NULL,
   batch VARCHAR(50) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -22,7 +22,7 @@ CREATE TABLE staff (
   id INT AUTO_INCREMENT PRIMARY KEY,
   staff_id VARCHAR(50) NOT NULL UNIQUE,
   name VARCHAR(100) NOT NULL,
-  email VARCHAR(100) NOT NULL UNIQUE,
+  phone VARCHAR(50) NOT NULL UNIQUE,
   department VARCHAR(100) NOT NULL,
   designation VARCHAR(100) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -44,11 +44,11 @@ CREATE TABLE timesheet_entries (
 );
 
 -- Insert dummy data for demonstration
-INSERT INTO students (student_id, name, email, department, batch) VALUES
-('STU001', 'Arjun Kumar', 'arjun@example.com', 'Computer Science', '2023-2027'),
-('STU002', 'Priya Sharma', 'priya@example.com', 'Electrical Engineering', '2024-2028'),
-('STU003', 'Rohan Das', 'rohan@example.com', 'Mechanical Engineering', '2023-2027');
+INSERT INTO students (student_id, name, phone, department, batch) VALUES
+('STU001', 'Arjun Kumar', '+91 98765 43210', 'Computer Science', '2023-2027'),
+('STU002', 'Priya Sharma', '+91 98765 43211', 'Electrical Engineering', '2024-2028'),
+('STU003', 'Rohan Das', '+91 98765 43212', 'Mechanical Engineering', '2023-2027');
 
-INSERT INTO staff (staff_id, name, email, department, designation) VALUES
-('STF001', 'Dr. Ramesh Babu', 'ramesh@example.com', 'Computer Science', 'Professor'),
-('STF002', 'Sarah Jenkins', 'sarah@example.com', 'Electrical Engineering', 'Lab Assistant');
+INSERT INTO staff (staff_id, name, phone, department, designation) VALUES
+('STF001', 'Dr. Ramesh Babu', '+91 98765 43220', 'Computer Science', 'Professor'),
+('STF002', 'Sarah Jenkins', '+91 98765 43221', 'Electrical Engineering', 'Lab Assistant');

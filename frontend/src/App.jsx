@@ -632,7 +632,7 @@ export default function App() {
       const fields = [
         { label: 'Student ID', key: 'student_id' },
         { label: 'Name', key: 'name' },
-        { label: 'Email', key: 'email' },
+        { label: 'Phone', key: 'phone' },
         { label: 'Department', key: 'department' },
         { label: 'Batch', key: 'batch' }
       ];
@@ -641,7 +641,7 @@ export default function App() {
       const fields = [
         { label: 'Staff ID', key: 'staff_id' },
         { label: 'Name', key: 'name' },
-        { label: 'Email', key: 'email' },
+        { label: 'Phone', key: 'phone' },
         { label: 'Department', key: 'department' },
         { label: 'Designation', key: 'designation' }
       ];
@@ -694,9 +694,9 @@ export default function App() {
 
       for (const item of parsedData) {
         const idField = type === 'student' ? 'student_id' : 'staff_id';
-        if (!item[idField] || !item.name || !item.email || !item.department) {
+        if (!item[idField] || !item.name || !item.phone || !item.department) {
           failCount++;
-          errorMsgs.push(`Row missing required fields (ID, Name, Email, Dept)`);
+          errorMsgs.push(`Row missing required fields (ID, Name, Phone, Dept)`);
           continue;
         }
 
@@ -778,8 +778,8 @@ export default function App() {
           key = type === 'student' ? 'student_id' : 'staff_id';
         } else if (header.includes('name')) {
           key = 'name';
-        } else if (header.includes('mail')) {
-          key = 'email';
+        } else if (header.includes('phone') || header.includes('contact') || header.includes('mobile')) {
+          key = 'phone';
         } else if (header.includes('dept') || header.includes('department')) {
           key = 'department';
         } else if (header.includes('batch') || header.includes('year')) {
@@ -1074,7 +1074,7 @@ export default function App() {
                           {terminalUserType === 'student' ? `ID: ${selectedUser.student_id} | Batch: ${selectedUser.batch}` : `ID: ${selectedUser.staff_id} | Designation: ${selectedUser.designation}`}
                         </p>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Department: {selectedUser.department}</p>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Email: {selectedUser.email}</p>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Phone: {selectedUser.phone}</p>
                       </div>
                       <div>
                         {activeCheckInRecord ? (
@@ -1260,7 +1260,7 @@ export default function App() {
                   <tr>
                     <th>Student ID</th>
                     <th>Name</th>
-                    <th>Email</th>
+                    <th>Phone</th>
                     <th>Department</th>
                     <th>Batch</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
@@ -1272,7 +1272,7 @@ export default function App() {
                       <tr key={student.id}>
                         <td style={{ fontWeight: 600, color: 'var(--primary)' }}>{student.student_id}</td>
                         <td style={{ fontWeight: 600 }}>{student.name}</td>
-                        <td style={{ color: 'var(--text-secondary)' }}>{student.email}</td>
+                        <td style={{ color: 'var(--text-secondary)' }}>{student.phone}</td>
                         <td>{student.department}</td>
                         <td>
                           <span className="badge badge-student">{student.batch}</span>
@@ -1353,7 +1353,7 @@ export default function App() {
                   <tr>
                     <th>Staff ID</th>
                     <th>Name</th>
-                    <th>Email</th>
+                    <th>Phone</th>
                     <th>Department</th>
                     <th>Designation</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
@@ -1365,7 +1365,7 @@ export default function App() {
                       <tr key={member.id}>
                         <td style={{ fontWeight: 600, color: 'var(--secondary)' }}>{member.staff_id}</td>
                         <td style={{ fontWeight: 600 }}>{member.name}</td>
-                        <td style={{ color: 'var(--text-secondary)' }}>{member.email}</td>
+                        <td style={{ color: 'var(--text-secondary)' }}>{member.phone}</td>
                         <td>{member.department}</td>
                         <td>
                           <span className="badge badge-staff">{member.designation}</span>
@@ -1662,14 +1662,14 @@ export default function App() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Email Address</label>
+                <label className="form-label">Phone Number</label>
                 <input 
-                  type="email" 
-                  name="email" 
+                  type="tel" 
+                  name="phone" 
                   required 
                   className="form-input" 
-                  placeholder="e.g. rahul@example.com"
-                  defaultValue={studentModal.mode === 'edit' ? studentModal.data.email : ''}
+                  placeholder="e.g. +91 98765 43210"
+                  defaultValue={studentModal.mode === 'edit' ? studentModal.data.phone : ''}
                 />
               </div>
 
@@ -1754,14 +1754,14 @@ export default function App() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Email Address</label>
+                <label className="form-label">Phone Number</label>
                 <input 
-                  type="email" 
-                  name="email" 
+                  type="tel" 
+                  name="phone" 
                   required 
                   className="form-input" 
-                  placeholder="e.g. kavita@example.com"
-                  defaultValue={staffModal.mode === 'edit' ? staffModal.data.email : ''}
+                  placeholder="e.g. +91 98765 43210"
+                  defaultValue={staffModal.mode === 'edit' ? staffModal.data.phone : ''}
                 />
               </div>
 

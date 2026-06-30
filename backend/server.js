@@ -22,8 +22,8 @@ app.use((req, res, next) => {
 });
 
 // Helper functions for validating fields
-const isValidEmail = (email) => {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const isValidPhone = (phone) => {
+  return /^\+?[0-9\s\-()]{7,20}$/.test(phone);
 };
 
 // ==========================================
@@ -43,40 +43,40 @@ app.get('/api/students', async (req, res) => {
 
 // Add a student
 app.post('/api/students', async (req, res) => {
-  const { student_id, name, email, department, batch } = req.body;
+  const { student_id, name, phone, department, batch } = req.body;
 
   // Validation
-  if (!student_id || !name || !email || !department || !batch) {
-    return res.status(400).json({ error: 'All fields (student_id, name, email, department, batch) are required' });
+  if (!student_id || !name || !phone || !department || !batch) {
+    return res.status(400).json({ error: 'All fields (student_id, name, phone, department, batch) are required' });
   }
-  if (!isValidEmail(email)) {
-    return res.status(400).json({ error: 'Invalid email format' });
+  if (!isValidPhone(phone)) {
+    return res.status(400).json({ error: 'Invalid phone number format' });
   }
 
   try {
-    // Check if student_id or email already exists
+    // Check if student_id or phone already exists
     const [existing] = await db.query(
-      'SELECT student_id, email FROM students WHERE student_id = ? OR email = ?',
-      [student_id, email]
+      'SELECT student_id, phone FROM students WHERE student_id = ? OR phone = ?',
+      [student_id, phone]
     );
 
     if (existing.length > 0) {
       if (existing.some(s => s.student_id === student_id)) {
         return res.status(400).json({ error: 'Student ID already exists' });
       }
-      if (existing.some(s => s.email === email)) {
-        return res.status(400).json({ error: 'Email already exists' });
+      if (existing.some(s => s.phone === phone)) {
+        return res.status(400).json({ error: 'Phone number already exists' });
       }
     }
 
     const [result] = await db.query(
-      'INSERT INTO students (student_id, name, email, department, batch) VALUES (?, ?, ?, ?, ?)',
-      [student_id, name, email, department, batch]
+      'INSERT INTO students (student_id, name, phone, department, batch) VALUES (?, ?, ?, ?, ?)',
+      [student_id, name, phone, department, batch]
     );
 
     res.status(201).json({
       message: 'Student registered successfully',
-      student: { id: result.insertId, student_id, name, email, department, batch }
+      student: { id: result.insertId, student_id, name, phone, department, batch }
     });
   } catch (error) {
     console.error(error);
@@ -87,34 +87,34 @@ app.post('/api/students', async (req, res) => {
 // Update a student
 app.put('/api/students/:id', async (req, res) => {
   const { id } = req.params;
-  const { student_id, name, email, department, batch } = req.body;
+  const { student_id, name, phone, department, batch } = req.body;
 
-  if (!student_id || !name || !email || !department || !batch) {
+  if (!student_id || !name || !phone || !department || !batch) {
     return res.status(400).json({ error: 'All fields are required' });
   }
-  if (!isValidEmail(email)) {
-    return res.status(400).json({ error: 'Invalid email format' });
+  if (!isValidPhone(phone)) {
+    return res.status(400).json({ error: 'Invalid phone number format' });
   }
 
   try {
     // Check uniqueness excluding current record
     const [existing] = await db.query(
-      'SELECT id, student_id, email FROM students WHERE (student_id = ? OR email = ?) AND id != ?',
-      [student_id, email, id]
+      'SELECT id, student_id, phone FROM students WHERE (student_id = ? OR phone = ?) AND id != ?',
+      [student_id, phone, id]
     );
 
     if (existing.length > 0) {
       if (existing.some(s => s.student_id === student_id)) {
         return res.status(400).json({ error: 'Student ID already exists' });
       }
-      if (existing.some(s => s.email === email)) {
-        return res.status(400).json({ error: 'Email already exists' });
+      if (existing.some(s => s.phone === phone)) {
+        return res.status(400).json({ error: 'Phone number already exists' });
       }
     }
 
     const [result] = await db.query(
-      'UPDATE students SET student_id = ?, name = ?, email = ?, department = ?, batch = ? WHERE id = ?',
-      [student_id, name, email, department, batch, id]
+      'UPDATE students SET student_id = ?, name = ?, phone = ?, department = ?, batch = ? WHERE id = ?',
+      [student_id, name, phone, department, batch, id]
     );
 
     if (result.affectedRows === 0) {
@@ -160,39 +160,39 @@ app.get('/api/staff', async (req, res) => {
 
 // Add a staff member
 app.post('/api/staff', async (req, res) => {
-  const { staff_id, name, email, department, designation } = req.body;
+  const { staff_id, name, phone, department, designation } = req.body;
 
-  if (!staff_id || !name || !email || !department || !designation) {
-    return res.status(400).json({ error: 'All fields (staff_id, name, email, department, designation) are required' });
+  if (!staff_id || !name || !phone || !department || !designation) {
+    return res.status(400).json({ error: 'All fields (staff_id, name, phone, department, designation) are required' });
   }
-  if (!isValidEmail(email)) {
-    return res.status(400).json({ error: 'Invalid email format' });
+  if (!isValidPhone(phone)) {
+    return res.status(400).json({ error: 'Invalid phone number format' });
   }
 
   try {
-    // Check if staff_id or email already exists
+    // Check if staff_id or phone already exists
     const [existing] = await db.query(
-      'SELECT staff_id, email FROM staff WHERE staff_id = ? OR email = ?',
-      [staff_id, email]
+      'SELECT staff_id, phone FROM staff WHERE staff_id = ? OR phone = ?',
+      [staff_id, phone]
     );
 
     if (existing.length > 0) {
       if (existing.some(s => s.staff_id === staff_id)) {
         return res.status(400).json({ error: 'Staff ID already exists' });
       }
-      if (existing.some(s => s.email === email)) {
-        return res.status(400).json({ error: 'Email already exists' });
+      if (existing.some(s => s.phone === phone)) {
+        return res.status(400).json({ error: 'Phone number already exists' });
       }
     }
 
     const [result] = await db.query(
-      'INSERT INTO staff (staff_id, name, email, department, designation) VALUES (?, ?, ?, ?, ?)',
-      [staff_id, name, email, department, designation]
+      'INSERT INTO staff (staff_id, name, phone, department, designation) VALUES (?, ?, ?, ?, ?)',
+      [staff_id, name, phone, department, designation]
     );
 
     res.status(201).json({
       message: 'Staff registered successfully',
-      staff: { id: result.insertId, staff_id, name, email, department, designation }
+      staff: { id: result.insertId, staff_id, name, phone, department, designation }
     });
   } catch (error) {
     console.error(error);
@@ -203,33 +203,33 @@ app.post('/api/staff', async (req, res) => {
 // Update a staff member
 app.put('/api/staff/:id', async (req, res) => {
   const { id } = req.params;
-  const { staff_id, name, email, department, designation } = req.body;
+  const { staff_id, name, phone, department, designation } = req.body;
 
-  if (!staff_id || !name || !email || !department || !designation) {
+  if (!staff_id || !name || !phone || !department || !designation) {
     return res.status(400).json({ error: 'All fields are required' });
   }
-  if (!isValidEmail(email)) {
-    return res.status(400).json({ error: 'Invalid email format' });
+  if (!isValidPhone(phone)) {
+    return res.status(400).json({ error: 'Invalid phone number format' });
   }
 
   try {
     const [existing] = await db.query(
-      'SELECT id, staff_id, email FROM staff WHERE (staff_id = ? OR email = ?) AND id != ?',
-      [staff_id, email, id]
+      'SELECT id, staff_id, phone FROM staff WHERE (staff_id = ? OR phone = ?) AND id != ?',
+      [staff_id, phone, id]
     );
 
     if (existing.length > 0) {
       if (existing.some(s => s.staff_id === staff_id)) {
         return res.status(400).json({ error: 'Staff ID already exists' });
       }
-      if (existing.some(s => s.email === email)) {
-        return res.status(400).json({ error: 'Email already exists' });
+      if (existing.some(s => s.phone === phone)) {
+        return res.status(400).json({ error: 'Phone number already exists' });
       }
     }
 
     const [result] = await db.query(
-      'UPDATE staff SET staff_id = ?, name = ?, email = ?, department = ?, designation = ? WHERE id = ?',
-      [staff_id, name, email, department, designation, id]
+      'UPDATE staff SET staff_id = ?, name = ?, phone = ?, department = ?, designation = ? WHERE id = ?',
+      [staff_id, name, phone, department, designation, id]
     );
 
     if (result.affectedRows === 0) {
