@@ -394,6 +394,24 @@ export default function App() {
     }
   };
 
+  const triggerWhatsAppRedirect = (actionType, user, timeStr) => {
+    if (!user || !user.phone) return;
+
+    // Clean up phone number
+    let cleanPhone = user.phone.replace(/[\s\-()]/g, '');
+    // Auto-prepend default country code (91 for India) if phone is exactly 10 digits
+    if (cleanPhone.length === 10 && /^\d+$/.test(cleanPhone)) {
+      cleanPhone = '91' + cleanPhone;
+    }
+
+    const message = actionType === 'in'
+      ? `Hello ${user.name}, you have successfully Clocked-In at ${timeStr} for ${terminalPurpose || 'General'}. - Timesheet System`
+      : `Hello ${user.name}, you have successfully Clocked-Out at ${timeStr}. - Timesheet System`;
+
+    const url = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+
   const executeCheckIn = async (photoBase64) => {
     try {
       const res = await fetch(`${API_URL}/timesheet/check-in`, {
@@ -414,6 +432,10 @@ export default function App() {
 
       if (res.ok) {
         showAlert(`Successfully clocked-in ${selectedUser.name}`);
+        
+        // Trigger WhatsApp Redirect
+        triggerWhatsAppRedirect('in', selectedUser, data.check_in || new Date().toLocaleTimeString());
+
         setSelectedUser(null);
         setTerminalSearch('');
         setTerminalNotes('');
@@ -457,6 +479,10 @@ export default function App() {
 
       if (res.ok) {
         showAlert(`Successfully clocked-out ${selectedUser.name}`);
+        
+        // Trigger WhatsApp Redirect
+        triggerWhatsAppRedirect('out', selectedUser, data.check_out || new Date().toLocaleTimeString());
+
         setSelectedUser(null);
         setTerminalSearch('');
         setTerminalNotes('');
