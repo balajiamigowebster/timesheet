@@ -12,6 +12,12 @@ function sendWhatsAppMessage(toPhone, message) {
     // Clean up the phone number (remove spaces, parentheses, dashes, keep leading plus if present)
     let cleanPhone = toPhone.replace(/[\s\-()]/g, '');
 
+    // If phone number is exactly 10 digits, prepend the default country code (defaulting to 91 for India)
+    if (cleanPhone.length === 10 && /^\d+$/.test(cleanPhone)) {
+      const defaultCountryCode = process.env.DEFAULT_COUNTRY_CODE || '91';
+      cleanPhone = defaultCountryCode + cleanPhone;
+    }
+
     // 1. Option A: Twilio Gateway
     if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
       const sid = process.env.TWILIO_ACCOUNT_SID;
