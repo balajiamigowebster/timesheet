@@ -1151,97 +1151,155 @@ export default function App() {
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '100vh',
-        background: 'radial-gradient(circle at top right, #605BE5, #FF4979, #f8fafc)',
+        background: 'radial-gradient(circle at top right, rgba(96, 91, 229, 0.15), rgba(255, 73, 121, 0.15), #f8fafc)',
         fontFamily: 'Inter, sans-serif',
-        padding: '1.5rem'
+        padding: '1.5rem',
+        position: 'relative',
+        overflow: 'hidden'
       }}>
-        <div className="card" style={{
-          width: '100%',
-          maxWidth: '400px',
-          padding: '2.5rem',
-          background: '#ffffff',
-          border: '1px solid rgba(96, 91, 229, 0.1)',
-          borderRadius: 'var(--radius-lg)',
-          boxShadow: '0 20px 40px rgba(96, 91, 229, 0.15)',
-          backdropFilter: 'blur(16px)'
-        }}>
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div style={{
-              width: '60px',
-              height: '60px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 1rem',
-              boxShadow: '0 0 20px rgba(255, 73, 121, 0.4)'
-            }}>
-              <Clock size={28} style={{ color: '#fff' }} />
-            </div>
-            <h1 style={{
-              fontSize: '1.75rem',
-              fontWeight: 800,
-              background: 'linear-gradient(135deg, #FF4979, #605BE5)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              letterSpacing: '-0.5px',
-              marginBottom: '0.35rem'
-            }}>Madhusphonics</h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Attendance & Timesheet Admin Portal</p>
+        {/* Floating background school elements */}
+        <div className="floating-icon" style={{ top: '15%', left: '10%', animation: 'float 6s ease-in-out infinite' }}>
+          <Edit2 size={48} />
+        </div>
+        <div className="floating-icon" style={{ bottom: '20%', left: '15%', animation: 'float-reverse 8s ease-in-out infinite' }}>
+          <BookOpen size={56} />
+        </div>
+        <div className="floating-icon" style={{ top: '25%', right: '12%', animation: 'float 7s ease-in-out infinite' }}>
+          <Users size={52} />
+        </div>
+        <div className="floating-icon" style={{ bottom: '15%', right: '15%', animation: 'float-reverse 9s ease-in-out infinite' }}>
+          <Calendar size={48} />
+        </div>
+
+        {/* Dual-Pane container */}
+        <div className="login-container-wrap">
+          {/* Left illustration pane */}
+          <div className="login-left-pane">
+            <img 
+              src="https://madhusphonics.com/wp-content/uploads/2024/01/banner.png" 
+              alt="Madhu's Handwriting"
+              style={{ width: '85%', maxWidth: '280px', marginBottom: '1.5rem', filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.15))' }}
+            />
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '0.5rem', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>Unlock Writing Potential</h2>
+            <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.95)', lineHeight: '1.4', maxWidth: '300px', margin: '0 auto' }}>
+              Chennai's premier training enhancement program for Phonics & Handwriting.
+            </p>
           </div>
 
-          {loginError && (
-            <div style={{
-              padding: '0.75rem 1rem',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.25)',
-              borderRadius: 'var(--radius-md)',
-              color: '#f87171',
-              fontSize: '0.85rem',
-              marginBottom: '1.25rem',
-              textAlign: 'center'
-            }}>
-              {loginError}
-            </div>
-          )}
+          {/* Right login form pane */}
+          <div className="login-right-pane">
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+              {/* Graduate Cap Logo Decoration */}
+              <div style={{
+                position: 'relative',
+                width: '90px',
+                height: '90px',
+                margin: '0 auto 1.25rem'
+              }}>
+                <svg 
+                  viewBox="0 0 100 60" 
+                  style={{
+                    position: 'absolute',
+                    top: '-24px',
+                    left: '10px',
+                    width: '70px',
+                    height: '42px',
+                    zIndex: 2,
+                    filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.15))'
+                  }}
+                >
+                  <polygon points="50,5 95,22 50,39 5,22" fill="#605BE5" />
+                  <path d="M25,28 L25,38 C25,45 75,45 75,38 L75,28" fill="#4D48CC" />
+                  <path d="M50,22 L15,32 L15,45" fill="none" stroke="#FFD700" strokeWidth="2.5" strokeLinecap="round" />
+                  <circle cx="15" cy="45" r="3" fill="#FFD700" />
+                </svg>
+                
+                <div style={{
+                  position: 'relative',
+                  width: '90px',
+                  height: '90px',
+                  borderRadius: '50%',
+                  background: '#ffffff',
+                  border: '3px solid #FF4979',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 8px 24px rgba(255, 73, 121, 0.2)',
+                  overflow: 'hidden',
+                  zIndex: 1
+                }}>
+                  <img 
+                    src="https://madhusphonics.com/wp-content/uploads/2024/01/logo-2.png" 
+                    alt="Madhusphonics Logo"
+                    style={{ width: '90%', height: '90%', objectFit: 'contain' }}
+                  />
+                </div>
+              </div>
 
-          <form onSubmit={handleLogin}>
-            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-              <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Admin Username</label>
-              <input 
-                type="text"
-                className="form-input"
-                placeholder="Enter username"
-                required
-                value={loginUsername}
-                onChange={(e) => setLoginUsername(e.target.value)}
-                style={{ width: '100%', boxSizing: 'border-box' }}
-              />
+              <h1 style={{
+                fontSize: '1.6rem',
+                fontWeight: 800,
+                background: 'linear-gradient(135deg, #FF4979, #605BE5)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                letterSpacing: '-0.5px',
+                marginBottom: '0.35rem'
+              }}>Madhusphonics</h1>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Timesheet Admin Console</p>
             </div>
 
-            <div className="form-group" style={{ marginBottom: '1.75rem' }}>
-              <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Admin Password</label>
-              <input 
-                type="password"
-                className="form-input"
-                placeholder="Enter password"
-                required
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                style={{ width: '100%', boxSizing: 'border-box' }}
-              />
-            </div>
+            {loginError && (
+              <div style={{
+                padding: '0.75rem 1rem',
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                borderRadius: 'var(--radius-md)',
+                color: '#f87171',
+                fontSize: '0.85rem',
+                marginBottom: '1.25rem',
+                textAlign: 'center'
+              }}>
+                {loginError}
+              </div>
+            )}
 
-            <button 
-              type="submit" 
-              className="btn btn-primary" 
-              disabled={isLoggingIn}
-              style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
-            >
-              {isLoggingIn ? 'Verifying credentials...' : 'Login to Console'}
-            </button>
-          </form>
+            <form onSubmit={handleLogin}>
+              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Admin Username</label>
+                <input 
+                  type="text"
+                  className="form-input"
+                  placeholder="Enter username"
+                  required
+                  value={loginUsername}
+                  onChange={(e) => setLoginUsername(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '1.75rem' }}>
+                <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Admin Password</label>
+                <input 
+                  type="password"
+                  className="form-input"
+                  placeholder="Enter password"
+                  required
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                className="btn btn-primary" 
+                disabled={isLoggingIn}
+                style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+              >
+                {isLoggingIn ? 'Verifying credentials...' : 'Login to Console'}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     );
