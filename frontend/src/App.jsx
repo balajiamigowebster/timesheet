@@ -159,14 +159,14 @@ export default function App() {
 
   useEffect(() => {
     if (selectedUser) {
-      startCamera();
+      // startCamera(); // Commented out to bypass FaceID webcam requests
       fetchLocation();
     } else {
-      stopCamera();
+      // stopCamera();
       setLocation(null);
       setScanStatus('ready');
     }
-    return () => stopCamera();
+    // return () => stopCamera();
   }, [selectedUser]);
 
   // Fetch functions
@@ -471,10 +471,11 @@ export default function App() {
   };
 
   const handleClockAction = async (actionType) => {
+    // Face ID scanner capture and delays commented out for instant verification
+    /*
     setIsScanning(true);
     setScanStatus('scanning');
 
-    // 1. Capture photo
     let photoBase64 = null;
     if (videoRef.current && cameraStream) {
       try {
@@ -490,20 +491,21 @@ export default function App() {
       }
     }
 
-    // 2. Scan Delay
     await new Promise(resolve => setTimeout(resolve, 1200));
     setScanStatus('verified');
     await new Promise(resolve => setTimeout(resolve, 400));
+    */
 
-    // 3. Submit API
     if (actionType === 'in') {
-      await executeCheckIn(photoBase64);
+      await executeCheckIn(null);
     } else {
-      await executeCheckOut(photoBase64);
+      await executeCheckOut(null);
     }
 
+    /*
     setIsScanning(false);
     setScanStatus('ready');
+    */
   };
 
   const handleManualLogSubmit = async (e) => {
@@ -1096,6 +1098,7 @@ export default function App() {
                     )}
                   </div>
 
+                  {/* Face ID camera preview commented out
                   <div className="camera-preview-container">
                     {cameraStream ? (
                       <video 
@@ -1137,6 +1140,7 @@ export default function App() {
                       </div>
                     )}
                   </div>
+                  */}
 
                   <div className="location-status-badge">
                     <MapPin size={16} style={{ color: location && !location.error ? 'var(--success)' : 'var(--text-muted)' }} />
