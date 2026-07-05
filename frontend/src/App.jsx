@@ -405,8 +405,8 @@ export default function App() {
     }
 
     const message = actionType === 'in'
-      ? `Hello ${user.name}, you have successfully Clocked-In at ${timeStr} for ${terminalPurpose || 'General'}. - Timesheet System`
-      : `Hello ${user.name}, you have successfully Clocked-Out at ${timeStr}. - Timesheet System`;
+      ? `*From Madhusphonics*\n\nHello ${user.name}, you have successfully Clocked-In at ${timeStr} for ${terminalPurpose || 'General'}. - Timesheet System`
+      : `*From Madhusphonics*\n\nHello ${user.name}, you have successfully Clocked-Out at ${timeStr}. - Timesheet System`;
 
     return `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
   };
@@ -615,7 +615,7 @@ export default function App() {
 
         // Trigger WhatsApp Redirect using pre-opened window
         if (waWindow && user && user.phone) {
-          const msg = `Hello ${user.name}, a manual timesheet log has been created for you on ${payload.date}. Clock-In: ${payload.check_in_time}, Clock-Out: ${payload.check_out_time}. - Timesheet System`;
+          const msg = `*From Madhusphonics*\n\nHello ${user.name}, a manual timesheet log has been created for you on ${payload.date}. Clock-In: ${payload.check_in_time}, Clock-Out: ${payload.check_out_time}. - Timesheet System`;
           let cleanPhone = user.phone.replace(/[\s\-()]/g, '');
           if (cleanPhone.length === 10 && /^\d+$/.test(cleanPhone)) {
             cleanPhone = '91' + cleanPhone;

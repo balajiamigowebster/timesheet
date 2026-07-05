@@ -398,7 +398,7 @@ app.post('/api/timesheet/check-in', async (req, res) => {
     // Send WhatsApp notification asynchronously
     const user = userCheck[0];
     if (user && user.phone) {
-      const msg = `Hello ${user.name}, you have successfully Clocked-In at ${localDateTime} for ${purpose || 'General'}. - Timesheet System`;
+      const msg = `*From Madhusphonics*\n\nHello ${user.name}, you have successfully Clocked-In at ${localDateTime} for ${purpose || 'General'}. - Timesheet System`;
       sendWhatsAppMessage(user.phone, msg).catch(err => console.error('Error sending WhatsApp check-in:', err));
     }
   } catch (error) {
@@ -482,7 +482,7 @@ app.post('/api/timesheet/check-out', async (req, res) => {
 
       if (entryCheck.length > 0 && entryCheck[0].phone) {
         const entry = entryCheck[0];
-        const msg = `Hello ${entry.name}, you have successfully Clocked-Out at ${entry.check_out}. - Timesheet System`;
+        const msg = `*From Madhusphonics*\n\nHello ${entry.name}, you have successfully Clocked-Out at ${entry.check_out}. - Timesheet System`;
         sendWhatsAppMessage(entry.phone, msg).catch(err => console.error('Error sending WhatsApp check-out:', err));
       }
     } catch (notificationError) {
