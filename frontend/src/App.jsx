@@ -394,8 +394,8 @@ export default function App() {
     }
   };
 
-  const triggerWhatsAppRedirect = (actionType, user, timeStr) => {
-    if (!user || !user.phone) return;
+  const getWhatsAppUrl = (actionType, user, timeStr) => {
+    if (!user || !user.phone) return null;
 
     // Clean up phone number
     let cleanPhone = user.phone.replace(/[\s\-()]/g, '');
@@ -408,11 +408,19 @@ export default function App() {
       ? `Hello ${user.name}, you have successfully Clocked-In at ${timeStr} for ${terminalPurpose || 'General'}. - Timesheet System`
       : `Hello ${user.name}, you have successfully Clocked-Out at ${timeStr}. - Timesheet System`;
 
-    const url = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
+    return `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
   };
 
   const executeCheckIn = async (photoBase64) => {
+    // Pre-open the window to bypass Chrome's popup blocker
+    let waWindow = null;
+    if (selectedUser && selectedUser.phone) {
+      waWindow = window.open('', '_blank');
+      if (waWindow) {
+        waWindow.document.write('<html><head><title>WhatsApp Redirection</title></head><body style="font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; background:#111b21; color:#e9edef;"><h2>Redirecting to WhatsApp Web...</h2></body></html>');
+      }
+    }
+
     try {
       const res = await fetch(`${API_URL}/timesheet/check-in`, {
         method: 'POST',
@@ -433,8 +441,13 @@ export default function App() {
       if (res.ok) {
         showAlert(`Successfully clocked-in ${selectedUser.name}`);
         
-        // Trigger WhatsApp Redirect
-        triggerWhatsAppRedirect('in', selectedUser, data.check_in || new Date().toLocaleTimeString());
+        // Trigger WhatsApp Redirect using pre-opened window
+        const url = getWhatsAppUrl('in', selectedUser, data.check_in || new Date().toLocaleTimeString());
+        if (waWindow && url) {
+          waWindow.location.href = url;
+        } else if (waWindow) {
+          waWindow.close();
+        }
 
         setSelectedUser(null);
         setTerminalSearch('');
@@ -443,14 +456,25 @@ export default function App() {
         fetchStats();
         fetchLogs();
       } else {
+        if (waWindow) waWindow.close();
         showAlert(data.error || 'Clock-in failed', 'danger');
       }
     } catch (err) {
+      if (waWindow) waWindow.close();
       showAlert('Server connection error', 'danger');
     }
   };
 
   const executeCheckOut = async (photoBase64) => {
+    // Pre-open the window to bypass Chrome's popup blocker
+    let waWindow = null;
+    if (selectedUser && selectedUser.phone) {
+      waWindow = window.open('', '_blank');
+      if (waWindow) {
+        waWindow.document.write('<html><head><title>WhatsApp Redirection</title></head><body style="font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; background:#111b21; color:#e9edef;"><h2>Redirecting to WhatsApp Web...</h2></body></html>');
+      }
+    }
+
     try {
       const payload = activeCheckInRecord 
         ? { 
@@ -480,8 +504,13 @@ export default function App() {
       if (res.ok) {
         showAlert(`Successfully clocked-out ${selectedUser.name}`);
         
-        // Trigger WhatsApp Redirect
-        triggerWhatsAppRedirect('out', selectedUser, data.check_out || new Date().toLocaleTimeString());
+        // Trigger WhatsApp Redirect using pre-opened window
+        const url = getWhatsAppUrl('out', selectedUser, data.check_out || new Date().toLocaleTimeString());
+        if (waWindow && url) {
+          waWindow.location.href = url;
+        } else if (waWindow) {
+          waWindow.close();
+        }
 
         setSelectedUser(null);
         setTerminalSearch('');
@@ -489,9 +518,11 @@ export default function App() {
         fetchStats();
         fetchLogs();
       } else {
+        if (waWindow) waWindow.close();
         showAlert(data.error || 'Clock-out failed', 'danger');
       }
     } catch (err) {
+      if (waWindow) waWindow.close();
       showAlert('Server connection error', 'danger');
     }
   };
@@ -546,10 +577,22 @@ export default function App() {
       return;
     }
     const [type, userId] = userSelectStr.split(':');
+    const parsedUserId = parseInt(userId, 10);
+    const list = type === 'student' ? students : staff;
+    const user = list.find(u => u.id === parsedUserId);
+
+    // Pre-open the window to bypass Chrome's popup blocker
+    let waWindow = null;
+    if (user && user.phone) {
+      waWindow = window.open('', '_blank');
+      if (waWindow) {
+        waWindow.document.write('<html><head><title>WhatsApp Redirection</title></head><body style="font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; background:#111b21; color:#e9edef;"><h2>Redirecting to WhatsApp Web...</h2></body></html>');
+      }
+    }
 
     const entryPayload = {
       user_type: type,
-      user_id: parseInt(userId, 10),
+      user_id: parsedUserId,
       date: payload.date,
       check_in: `${payload.date} ${payload.check_in_time}:00`,
       check_out: `${payload.date} ${payload.check_out_time}:00`,
@@ -569,12 +612,25 @@ export default function App() {
       if (res.ok) {
         showAlert('Manual log entry created successfully');
         setManualLogModal(false);
+
+        // Trigger WhatsApp Redirect using pre-opened window
+        if (waWindow && user && user.phone) {
+          const msg = `Hello ${user.name}, a manual timesheet log has been created for you on ${payload.date}. Clock-In: ${payload.check_in_time}, Clock-Out: ${payload.check_out_time}. - Timesheet System`;
+          let cleanPhone = user.phone.replace(/[\s\-()]/g, '');
+          if (cleanPhone.length === 10 && /^\d+$/.test(cleanPhone)) {
+            cleanPhone = '91' + cleanPhone;
+          }
+          waWindow.location.href = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
+        }
+
         fetchStats();
         fetchLogs();
       } else {
+        if (waWindow) waWindow.close();
         showAlert(data.error || 'Failed to create log', 'danger');
       }
     } catch (err) {
+      if (waWindow) waWindow.close();
       showAlert('Server connection error', 'danger');
     }
   };
