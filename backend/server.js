@@ -22,6 +22,28 @@ app.use((req, res, next) => {
   next();
 });
 
+// Helper to format WhatsApp dates and times
+function formatWhatsAppMessageParts(dateObj) {
+  const d = dateObj ? new Date(dateObj) : new Date();
+  
+  // Time formatting: 6.00pm
+  let hours = d.getHours();
+  const minutes = d.getMinutes();
+  const ampm = hours >= 12 ? 'pm' : 'am';
+  hours = hours % 12;
+  hours = hours ? hours : 12; // 0 should be 12
+  const minStr = minutes < 10 ? '0' + minutes : minutes;
+  const timeStr = `${hours}.${minStr}${ampm}`;
+  
+  // Date formatting: D/M/YYYY
+  const day = d.getDate();
+  const month = d.getMonth() + 1;
+  const year = d.getFullYear();
+  const dateStr = `${day}/${month}/${year}`;
+  
+  return { timeStr, dateStr };
+}
+
 // Helper functions for validating fields
 const isValidPhone = (phone) => {
   return /^\+?[0-9\s\-()]{7,20}$/.test(phone);
@@ -398,7 +420,8 @@ app.post('/api/timesheet/check-in', async (req, res) => {
     // Send WhatsApp notification asynchronously
     const user = userCheck[0];
     if (user && user.phone) {
-      const msg = `*From Madhusphonics*\n\nHello ${user.name}, you have successfully Clocked-In at ${localDateTime} for ${purpose || 'General'}. - Timesheet System`;
+      const parts = formatWhatsAppMessageParts(now);
+      const msg = `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked in at ${parts.timeStr} on ${parts.dateStr} for ${purpose || 'General'} - Madhu's Phonics & Handwriting....Thank you`;
       sendWhatsAppMessage(user.phone, msg).catch(err => console.error('Error sending WhatsApp check-in:', err));
     }
   } catch (error) {
@@ -482,7 +505,8 @@ app.post('/api/timesheet/check-out', async (req, res) => {
 
       if (entryCheck.length > 0 && entryCheck[0].phone) {
         const entry = entryCheck[0];
-        const msg = `*From Madhusphonics*\n\nHello ${entry.name}, you have successfully Clocked-Out at ${entry.check_out}. - Timesheet System`;
+        const parts = formatWhatsAppMessageParts(new Date(entry.check_out));
+        const msg = `*From Madhusphonics*\n\nHello ${entry.name}, you have successfully checked out at ${parts.timeStr} on ${parts.dateStr} - Madhu's Phonics & Handwriting....Thank you`;
         sendWhatsAppMessage(entry.phone, msg).catch(err => console.error('Error sending WhatsApp check-out:', err));
       }
     } catch (notificationError) {

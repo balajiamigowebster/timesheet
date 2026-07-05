@@ -445,7 +445,7 @@ export default function App() {
     }
   };
 
-  const getWhatsAppUrl = (actionType, user, timeStr) => {
+  const getWhatsAppUrl = (actionType, user, rawDateTime) => {
     if (!user || !user.phone) return null;
 
     // Clean up phone number
@@ -455,9 +455,11 @@ export default function App() {
       cleanPhone = '91' + cleanPhone;
     }
 
+    const { timeStr, dateStr } = formatWhatsAppDateTime(rawDateTime);
+
     const message = actionType === 'in'
-      ? `*From Madhusphonics*\n\nHello ${user.name}, you have successfully Clocked-In at ${timeStr} for ${terminalPurpose || 'General'}. - Timesheet System`
-      : `*From Madhusphonics*\n\nHello ${user.name}, you have successfully Clocked-Out at ${timeStr}. - Timesheet System`;
+      ? `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked in at ${timeStr} on ${dateStr} for ${terminalPurpose || 'General'} - Madhu's Phonics & Handwriting....Thank you`
+      : `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked out at ${timeStr} on ${dateStr} - Madhu's Phonics & Handwriting....Thank you`;
 
     return `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
   };
@@ -666,7 +668,9 @@ export default function App() {
 
         // Trigger WhatsApp Redirect using pre-opened window
         if (waWindow && user && user.phone) {
-          const msg = `*From Madhusphonics*\n\nHello ${user.name}, a manual timesheet log has been created for you on ${payload.date}. Clock-In: ${payload.check_in_time}, Clock-Out: ${payload.check_out_time}. - Timesheet System`;
+          const inParts = formatWhatsAppDateTime(`${payload.date} ${payload.check_in_time}:00`);
+          const outParts = formatWhatsAppDateTime(`${payload.date} ${payload.check_out_time}:00`);
+          const msg = `*From Madhusphonics*\n\nHello ${user.name}, a manual timesheet log has been created for you on ${inParts.dateStr}. Clock-In: ${inParts.timeStr}, Clock-Out: ${outParts.timeStr} for ${payload.purpose || 'General'} - Madhu's Phonics & Handwriting....Thank you`;
           let cleanPhone = user.phone.replace(/[\s\-()]/g, '');
           if (cleanPhone.length === 10 && /^\d+$/.test(cleanPhone)) {
             cleanPhone = '91' + cleanPhone;
@@ -1103,6 +1107,27 @@ export default function App() {
   };
 
   // Date/Time formatting helpers
+  const formatWhatsAppDateTime = (dateStr) => {
+    const d = dateStr ? new Date(dateStr) : new Date();
+    
+    // Time formatting: 6.00pm
+    let hours = d.getHours();
+    const minutes = d.getMinutes();
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 0 should be 12
+    const minStr = minutes < 10 ? '0' + minutes : minutes;
+    const timeFormatted = `${hours}.${minStr}${ampm}`;
+    
+    // Date formatting: D/M/YYYY
+    const day = d.getDate();
+    const month = d.getMonth() + 1;
+    const year = d.getFullYear();
+    const dateFormatted = `${day}/${month}/${year}`;
+    
+    return { timeStr: timeFormatted, dateStr: dateFormatted };
+  };
+
   const formatDateTime = (dateTimeStr) => {
     if (!dateTimeStr) return '-';
     const date = new Date(dateTimeStr);
