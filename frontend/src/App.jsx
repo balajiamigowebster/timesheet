@@ -822,6 +822,164 @@ export default function App() {
     reader.readAsText(file);
   };
 
+  const handleExportLogsCSV = () => {
+    const fields = [
+      { label: 'Type', key: 'user_type' },
+      { label: 'ID Code', key: 'id_code' },
+      { label: 'Name', key: 'name' },
+      { label: 'Department', key: 'department' },
+      { label: 'Date', key: 'date' },
+      { label: 'Clock In', key: 'check_in' },
+      { label: 'Clock Out', key: 'check_out' },
+      { label: 'Purpose', key: 'purpose' },
+      { label: 'Notes', key: 'notes' }
+    ];
+    exportToCSV(logs, 'timesheet_logs.csv', fields);
+  };
+
+  const handleImportLogsCSV = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target.result;
+      const parsedData = parseLogsCSV(text);
+
+      if (parsedData.length === 0) {
+        showAlert('No valid log records found in CSV file', 'danger');
+        return;
+      }
+
+      let successCount = 0;
+      let failCount = 0;
+      let errorMsgs = [];
+
+      showAlert(`Starting bulk import of ${parsedData.length} logs...`);
+
+      for (const item of parsedData) {
+        // Find user_id from id_code
+        let resolvedUserId = null;
+        if (item.user_type === 'student') {
+          const matched = students.find(s => s.student_id.toLowerCase() === item.id_code.toLowerCase());
+          if (matched) resolvedUserId = matched.id;
+        } else if (item.user_type === 'staff') {
+          const matched = staff.find(s => s.staff_id.toLowerCase() === item.id_code.toLowerCase());
+          if (matched) resolvedUserId = matched.id;
+        }
+
+        if (!resolvedUserId) {
+          failCount++;
+          errorMsgs.push(`User not found for ID Code: ${item.id_code}`);
+          continue;
+        }
+
+        const payload = {
+          user_type: item.user_type,
+          user_id: resolvedUserId,
+          date: item.date,
+          check_in: item.check_in,
+          check_out: item.check_out || null,
+          purpose: item.purpose || 'General',
+          notes: item.notes || ''
+        };
+
+        try {
+          const res = await fetch(`${API_URL}/timesheet/manual-entry`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (res.ok) {
+            successCount++;
+          } else {
+            failCount++;
+            errorMsgs.push(`${item.id_code}: ${data.error || 'Import failed'}`);
+          }
+        } catch (err) {
+          failCount++;
+          errorMsgs.push(`${item.id_code}: Network error`);
+        }
+      }
+
+      fetchLogs();
+      fetchStats();
+
+      if (successCount > 0) {
+        showAlert(`Successfully imported ${successCount} timesheet logs! ${failCount > 0 ? `${failCount} failed.` : ''}`);
+      } else if (failCount > 0) {
+        showAlert(`Failed to import logs. Errors: ${errorMsgs.slice(0, 3).join(', ')}`, 'danger');
+      }
+      
+      event.target.value = '';
+    };
+
+    reader.readAsText(file);
+  };
+
+  const parseLogsCSV = (text) => {
+    const lines = text.split(/\r?\n/);
+    if (lines.length === 0) return [];
+    
+    const firstLine = lines[0];
+    if (!firstLine) return [];
+    
+    const headers = firstLine.split(',').map(h => 
+      h.trim().replace(/^["']|["']$/g, '').toLowerCase()
+    );
+
+    const results = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      const matches = [];
+      let current = '';
+      let inQuotes = false;
+      for (let charIndex = 0; charIndex < line.length; charIndex++) {
+        const char = line[charIndex];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          matches.push(current.trim().replace(/^["']|["']$/g, ''));
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      matches.push(current.trim().replace(/^["']|["']$/g, ''));
+
+      const entry = {};
+      headers.forEach((header, index) => {
+        const val = matches[index] || '';
+        
+        // Map headers loosely
+        if (header.includes('type')) {
+          entry.user_type = val.toLowerCase().includes('staff') ? 'staff' : 'student';
+        } else if (header.includes('id') || header.includes('code')) {
+          entry.id_code = val;
+        } else if (header.includes('date')) {
+          entry.date = val;
+        } else if (header.includes('in') || header.includes('start')) {
+          entry.check_in = val;
+        } else if (header.includes('out') || header.includes('end')) {
+          entry.check_out = val;
+        } else if (header.includes('purpose')) {
+          entry.purpose = val;
+        } else if (header.includes('note')) {
+          entry.notes = val;
+        }
+      });
+
+      if (entry.user_type && entry.id_code && entry.date && entry.check_in) {
+        results.push(entry);
+      }
+    }
+    return results;
+  };
+
   const parseCSV = (text, type) => {
     const lines = text.split(/\r?\n/);
     if (lines.length === 0) return [];
@@ -1497,9 +1655,18 @@ export default function App() {
                 <h1>Timesheet Entry Logs</h1>
                 <p>View full details of historical clock-ins, clock-outs, and query logs.</p>
               </div>
-              <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => setManualLogModal(true)}>
-                <Plus size={16} /> Add Manual Log
-              </button>
+              <div className="header-actions">
+                <label className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', margin: 0 }}>
+                  <Upload size={16} /> Import Excel/CSV
+                  <input type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportLogsCSV} />
+                </label>
+                <button className="btn btn-outline" onClick={handleExportLogsCSV}>
+                  <Download size={16} /> Export to Excel
+                </button>
+                <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => setManualLogModal(true)}>
+                  <Plus size={16} /> Add Manual Log
+                </button>
+              </div>
             </div>
 
             {/* Filter controls */}
