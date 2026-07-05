@@ -31,6 +31,11 @@ const API_URL = import.meta.env.VITE_API_URL ||
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('adminToken') === 'madhusphonics-secret-token-key');
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [students, setStudents] = useState([]);
   const [staff, setStaff] = useState([]);
   const [logs, setLogs] = useState([]);
@@ -170,6 +175,41 @@ export default function App() {
     }
     // return () => stopCamera();
   }, [selectedUser]);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    setIsLoggingIn(true);
+    
+    try {
+      const res = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: loginUsername, password: loginPassword })
+      });
+      
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('adminToken', data.token);
+        setIsLoggedIn(true);
+        setLoginUsername('');
+        setLoginPassword('');
+      } else {
+        setLoginError(data.error || 'Invalid credentials');
+      }
+    } catch (err) {
+      setLoginError('Connection error. Please try again.');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleLogout = () => {
+    if (window.confirm('Are you sure you want to logout?')) {
+      localStorage.removeItem('adminToken');
+      setIsLoggedIn(false);
+    }
+  };
 
   // Fetch functions
   const fetchStats = async () => {
@@ -1057,6 +1097,109 @@ export default function App() {
     });
   };
 
+  if (!isLoggedIn) {
+    return (
+      <div className="login-wrapper" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        background: 'radial-gradient(circle at top right, #1e1b4b, #09090b)',
+        fontFamily: 'Inter, sans-serif',
+        padding: '1.5rem'
+      }}>
+        <div className="card" style={{
+          width: '100%',
+          maxWidth: '400px',
+          padding: '2.5rem',
+          background: 'rgba(17, 17, 27, 0.65)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+          backdropFilter: 'blur(16px)'
+        }}>
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1rem',
+              boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)'
+            }}>
+              <Clock size={28} style={{ color: '#fff' }} />
+            </div>
+            <h1 style={{
+              fontSize: '1.75rem',
+              fontWeight: 800,
+              background: 'linear-gradient(135deg, #fff, #a5b4fc)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              letterSpacing: '-0.5px',
+              marginBottom: '0.35rem'
+            }}>Madhusphonics</h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Attendance & Timesheet Admin Portal</p>
+          </div>
+
+          {loginError && (
+            <div style={{
+              padding: '0.75rem 1rem',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.25)',
+              borderRadius: 'var(--radius-md)',
+              color: '#f87171',
+              fontSize: '0.85rem',
+              marginBottom: '1.25rem',
+              textAlign: 'center'
+            }}>
+              {loginError}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin}>
+            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+              <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Admin Username</label>
+              <input 
+                type="text"
+                className="form-input"
+                placeholder="Enter username"
+                required
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+                style={{ width: '100%', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '1.75rem' }}>
+              <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Admin Password</label>
+              <input 
+                type="password"
+                className="form-input"
+                placeholder="Enter password"
+                required
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                style={{ width: '100%', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            <button 
+              type="submit" 
+              className="btn btn-primary" 
+              disabled={isLoggingIn}
+              style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+            >
+              {isLoggingIn ? 'Verifying credentials...' : 'Login to Console'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-container">
       {/* Mobile Header Bar */}
@@ -1121,6 +1264,14 @@ export default function App() {
           >
             <FileText size={18} />
             <span>Timesheet Logs</span>
+          </div>
+          <div 
+            onClick={handleLogout} 
+            className="nav-item"
+            style={{ marginTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem', color: '#f87171' }}
+          >
+            <LogOut size={18} />
+            <span>Logout</span>
           </div>
         </nav>
 

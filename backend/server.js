@@ -615,6 +615,19 @@ app.get('/api/timesheet/stats', async (req, res) => {
   }
 });
 
+// Admin Authentication Route
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  const adminUser = process.env.ADMIN_USERNAME || 'admin';
+  const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
+
+  if (username === adminUser && password === adminPass) {
+    res.json({ success: true, token: 'madhusphonics-secret-token-key' });
+  } else {
+    res.status(401).json({ error: 'Invalid username or password' });
+  }
+});
+
 // Base Route
 app.get('/', (req, res) => {
   res.send('Timesheet API is running...');
