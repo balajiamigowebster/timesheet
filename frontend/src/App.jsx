@@ -1658,11 +1658,11 @@ export default function App() {
                 <p>View full details of historical clock-ins, clock-outs, and query logs.</p>
               </div>
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                <label className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', margin: 0 }}>
+                <label className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', margin: 0, width: 'auto' }}>
                   <Upload size={16} /> Import Excel/CSV
                   <input type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportLogsCSV} />
                 </label>
-                <button className="btn btn-outline" onClick={handleExportLogsCSV}>
+                <button className="btn btn-outline" style={{ width: 'auto' }} onClick={handleExportLogsCSV}>
                   <Download size={16} /> Export to Excel
                 </button>
                 <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => setManualLogModal(true)}>
