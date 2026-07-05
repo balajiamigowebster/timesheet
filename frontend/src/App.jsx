@@ -1657,7 +1657,7 @@ export default function App() {
                 <h1>Timesheet Entry Logs</h1>
                 <p>View full details of historical clock-ins, clock-outs, and query logs.</p>
               </div>
-              <div className="header-actions">
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
                 <label className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', margin: 0 }}>
                   <Upload size={16} /> Import Excel/CSV
                   <input type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportLogsCSV} />
