@@ -1175,13 +1175,8 @@ export default function App() {
         <div className="login-container-wrap">
           {/* Left illustration pane */}
           <div className="login-left-pane">
-            <img 
-              src="https://madhusphonics.com/wp-content/uploads/2024/01/banner.png" 
-              alt="Madhu's Handwriting"
-              style={{ width: '85%', maxWidth: '280px', marginBottom: '1.5rem', filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.15))' }}
-            />
-            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '0.5rem', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>Unlock Writing Potential</h2>
-            <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.95)', lineHeight: '1.4', maxWidth: '300px', margin: '0 auto' }}>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '0.75rem', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>Unlock Writing Potential</h2>
+            <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.95)', lineHeight: '1.5', maxWidth: '320px', margin: '0 auto' }}>
               Chennai's premier training enhancement program for Phonics & Handwriting.
             </p>
           </div>
