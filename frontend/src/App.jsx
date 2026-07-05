@@ -1151,7 +1151,7 @@ export default function App() {
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '100vh',
-        background: 'radial-gradient(circle at top right, #1e1b4b, #09090b)',
+        background: 'radial-gradient(circle at top right, #605BE5, #FF4979, #f8fafc)',
         fontFamily: 'Inter, sans-serif',
         padding: '1.5rem'
       }}>
@@ -1159,10 +1159,10 @@ export default function App() {
           width: '100%',
           maxWidth: '400px',
           padding: '2.5rem',
-          background: 'rgba(17, 17, 27, 0.65)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          background: '#ffffff',
+          border: '1px solid rgba(96, 91, 229, 0.1)',
           borderRadius: 'var(--radius-lg)',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+          boxShadow: '0 20px 40px rgba(96, 91, 229, 0.15)',
           backdropFilter: 'blur(16px)'
         }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
@@ -1170,19 +1170,19 @@ export default function App() {
               width: '60px',
               height: '60px',
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))',
+              background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 1rem',
-              boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)'
+              boxShadow: '0 0 20px rgba(255, 73, 121, 0.4)'
             }}>
               <Clock size={28} style={{ color: '#fff' }} />
             </div>
             <h1 style={{
               fontSize: '1.75rem',
               fontWeight: 800,
-              background: 'linear-gradient(135deg, #fff, #a5b4fc)',
+              background: 'linear-gradient(135deg, #FF4979, #605BE5)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               letterSpacing: '-0.5px',
