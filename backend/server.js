@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const db = require('./db');
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+const { sendWhatsAppMessage } = require('./whatsapp');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -340,7 +341,7 @@ app.post('/api/timesheet/check-in', async (req, res) => {
   try {
     // 1. Verify user exists
     let userTable = user_type === 'student' ? 'students' : 'staff';
-    const [userCheck] = await db.query(`SELECT id, name FROM ${userTable} WHERE id = ?`, [user_id]);
+    const [userCheck] = await db.query(`SELECT id, name, phone FROM ${userTable} WHERE id = ?`, [user_id]);
     if (userCheck.length === 0) {
       return res.status(404).json({ error: `${user_type.charAt(0).toUpperCase() + user_type.slice(1)} user not found` });
     }
@@ -393,6 +394,13 @@ app.post('/api/timesheet/check-in', async (req, res) => {
       entryId: result.insertId,
       check_in: localDateTime
     });
+
+    // Send WhatsApp notification asynchronously
+    const user = userCheck[0];
+    if (user && user.phone) {
+      const msg = `Hello ${user.name}, you have successfully Clocked-In at ${localDateTime} for ${purpose || 'General'}. - Timesheet System`;
+      sendWhatsAppMessage(user.phone, msg).catch(err => console.error('Error sending WhatsApp check-in:', err));
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to record check-in' });
@@ -458,6 +466,28 @@ app.post('/api/timesheet/check-out', async (req, res) => {
       message: 'Check-out successful',
       check_out: localDateTime
     });
+
+    // Send WhatsApp notification asynchronously
+    try {
+      const [entryCheck] = await db.query(
+        `SELECT t.check_out, 
+                COALESCE(s.name, st.name) AS name, 
+                COALESCE(s.phone, st.phone) AS phone
+         FROM timesheet_entries t
+         LEFT JOIN students s ON t.student_ref_id = s.id
+         LEFT JOIN staff st ON t.staff_ref_id = st.id
+         WHERE t.id = ?`,
+        [activeLogId]
+      );
+
+      if (entryCheck.length > 0 && entryCheck[0].phone) {
+        const entry = entryCheck[0];
+        const msg = `Hello ${entry.name}, you have successfully Clocked-Out at ${entry.check_out}. - Timesheet System`;
+        sendWhatsAppMessage(entry.phone, msg).catch(err => console.error('Error sending WhatsApp check-out:', err));
+      }
+    } catch (notificationError) {
+      console.error('Failed to trigger checkout notification:', notificationError);
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to record check-out' });
