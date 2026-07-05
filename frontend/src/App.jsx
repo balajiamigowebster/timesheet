@@ -39,6 +39,7 @@ export default function App() {
   const [students, setStudents] = useState([]);
   const [staff, setStaff] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
   const [stats, setStats] = useState({
     counts: { totalStudents: 0, totalStaff: 0, activeStudents: 0, activeStaff: 0 },
     weeklyData: [],
@@ -204,11 +205,19 @@ export default function App() {
     }
   };
 
+  const showConfirm = (title, message, onConfirm) => {
+    setConfirmModal({ show: true, title, message, onConfirm });
+  };
+
+  const closeConfirm = () => {
+    setConfirmModal({ show: false, title: '', message: '', onConfirm: null });
+  };
+
   const handleLogout = () => {
-    if (window.confirm('Are you sure you want to logout?')) {
+    showConfirm('Confirm Logout', 'Are you sure you want to log out of the Madhusphonics admin panel?', () => {
       localStorage.removeItem('adminToken');
       setIsLoggedIn(false);
-    }
+    });
   };
 
   // Fetch functions
@@ -677,59 +686,72 @@ export default function App() {
     }
   };
 
-  const handleDeleteStudent = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to delete student "${name}"? All their clock-in logs will also be permanently deleted.`)) return;
-
-    try {
-      const res = await fetch(`${API_URL}/students/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        showAlert(`Deleted student "${name}"`);
-        fetchStudents();
-        fetchStats();
-        fetchLogs();
-      } else {
-        const data = await res.json();
-        showAlert(data.error || 'Failed to delete', 'danger');
+  const handleDeleteStudent = (id, name) => {
+    showConfirm(
+      'Delete Student',
+      `Are you sure you want to delete student "${name}"? All their clock-in logs will also be permanently deleted.`,
+      async () => {
+        try {
+          const res = await fetch(`${API_URL}/students/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            showAlert(`Deleted student "${name}"`);
+            fetchStudents();
+            fetchStats();
+            fetchLogs();
+          } else {
+            const data = await res.json();
+            showAlert(data.error || 'Failed to delete', 'danger');
+          }
+        } catch (err) {
+          showAlert('Server error', 'danger');
+        }
       }
-    } catch (err) {
-      showAlert('Server error', 'danger');
-    }
+    );
   };
 
-  const handleDeleteStaff = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to delete staff member "${name}"? All their clock-in logs will also be permanently deleted.`)) return;
-
-    try {
-      const res = await fetch(`${API_URL}/staff/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        showAlert(`Deleted staff member "${name}"`);
-        fetchStaff();
-        fetchStats();
-        fetchLogs();
-      } else {
-        const data = await res.json();
-        showAlert(data.error || 'Failed to delete', 'danger');
+  const handleDeleteStaff = (id, name) => {
+    showConfirm(
+      'Delete Staff Member',
+      `Are you sure you want to delete staff member "${name}"? All their clock-in logs will also be permanently deleted.`,
+      async () => {
+        try {
+          const res = await fetch(`${API_URL}/staff/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            showAlert(`Deleted staff member "${name}"`);
+            fetchStaff();
+            fetchStats();
+            fetchLogs();
+          } else {
+            const data = await res.json();
+            showAlert(data.error || 'Failed to delete', 'danger');
+          }
+        } catch (err) {
+          showAlert('Server error', 'danger');
+        }
       }
-    } catch (err) {
-      showAlert('Server error', 'danger');
-    }
+    );
   };
 
-  const handleDeleteLog = async (id) => {
-    if (!window.confirm('Delete this entry log permanently?')) return;
-    try {
-      const res = await fetch(`${API_URL}/timesheet/logs/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        showAlert('Timesheet entry deleted successfully');
-        fetchLogs();
-        fetchStats();
-      } else {
-        const data = await res.json();
-        showAlert(data.error || 'Failed to delete log', 'danger');
+  const handleDeleteLog = (id) => {
+    showConfirm(
+      'Delete Log Entry',
+      'Are you sure you want to permanently delete this timesheet log entry?',
+      async () => {
+        try {
+          const res = await fetch(`${API_URL}/timesheet/logs/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            showAlert('Timesheet entry deleted successfully');
+            fetchLogs();
+            fetchStats();
+          } else {
+            const data = await res.json();
+            showAlert(data.error || 'Failed to delete log', 'danger');
+          }
+        } catch (err) {
+          showAlert('Server error', 'danger');
+        }
       }
-    } catch (err) {
-      showAlert('Server error', 'danger');
-    }
+    );
   };
 
   const handleTableCheckOut = async (entryId, name) => {
@@ -2296,6 +2318,40 @@ export default function App() {
           <div className="lightbox-title">{lightboxPhoto.title}</div>
           <div className="lightbox-subtitle">
             {lightboxPhoto.type} Verification on {formatDateTime(lightboxPhoto.date)}
+          </div>
+        </div>
+      )}
+      {/* E. REUSABLE PREMIUM CONFIRM MODAL */}
+      {confirmModal.show && (
+        <div className="modal-overlay" style={{ zIndex: 1100 }}>
+          <div className="modal-content card" style={{ maxWidth: '400px', animation: 'fadeIn 0.25s ease-out' }}>
+            <div className="modal-header" style={{ marginBottom: '1rem', borderBottom: 'none', padding: 0 }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)' }}>
+                <Info size={20} style={{ color: 'var(--warning)' }} />
+                {confirmModal.title}
+              </h2>
+            </div>
+            <div className="modal-body" style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.5', marginBottom: '1.5rem' }}>
+              {confirmModal.message}
+            </div>
+            <div className="btn-group" style={{ marginTop: 0, justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button 
+                type="button" 
+                className="btn btn-outline" 
+                onClick={closeConfirm}
+                style={{ width: 'auto', padding: '0.6rem 1.25rem' }}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-danger" 
+                onClick={() => { confirmModal.onConfirm(); closeConfirm(); }}
+                style={{ width: 'auto', padding: '0.6rem 1.25rem' }}
+              >
+                Confirm
+              </button>
+            </div>
           </div>
         </div>
       )}
