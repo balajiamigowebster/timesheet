@@ -1325,8 +1325,24 @@ export default function App() {
       {/* Side Navigation */}
       <aside className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="logo-container">
-          <div className="logo-icon">
-            <Clock size={22} strokeWidth={2.5} />
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            background: '#ffffff',
+            border: '2px solid var(--primary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            boxShadow: '0 4px 12px rgba(255, 73, 121, 0.15)',
+            flexShrink: 0
+          }}>
+            <img 
+              src="https://madhusphonics.com/wp-content/uploads/2024/01/logo-2.png" 
+              alt="Logo"
+              style={{ width: '90%', height: '90%', objectFit: 'contain' }}
+            />
           </div>
           <span className="logo-text">TIMESHEET</span>
           <button className="mobile-close-sidebar-btn" onClick={() => setIsMobileMenuOpen(false)}>
