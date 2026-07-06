@@ -657,6 +657,25 @@ app.get('/', (req, res) => {
   res.send('Timesheet API is running...');
 });
 
+// Database migration to update WhatsApp phone numbers (from +91 9445332233 to +91 93424 66095)
+app.get('/api/migrate-phone', async (req, res) => {
+  try {
+    const [result1] = await db.query(
+      `UPDATE students SET phone = '+91 93424 66095' WHERE phone LIKE '%9445332233%'`
+    );
+    const [result2] = await db.query(
+      `UPDATE staff SET phone = '+91 93424 66095' WHERE phone LIKE '%9445332233%'`
+    );
+    res.json({
+      success: true,
+      message: `Successfully migrated database records. Updated ${result1.affectedRows} student(s) and ${result2.affectedRows} staff member(s).`
+    });
+  } catch (error) {
+    console.error('Migration failed:', error);
+    res.status(500).json({ error: 'Migration failed', details: error.message });
+  }
+});
+
 // Start Server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
