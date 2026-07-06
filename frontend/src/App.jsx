@@ -20,7 +20,9 @@ import {
   Menu,
   X,
   Upload,
-  Download
+  Download,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || (() => {
@@ -42,6 +44,7 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('adminToken') === 'madhusphonics-secret-token-key');
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [students, setStudents] = useState([]);
@@ -1294,15 +1297,36 @@ export default function App() {
 
               <div className="form-group" style={{ marginBottom: '1.75rem' }}>
                 <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Admin Password</label>
-                <input 
-                  type="password"
-                  className="form-input"
-                  placeholder="Enter password"
-                  required
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    type={showLoginPassword ? "text" : "password"}
+                    className="form-input"
+                    placeholder="Enter password"
+                    required
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    style={{ width: '100%', boxSizing: 'border-box', paddingRight: '2.5rem' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'var(--text-secondary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '4px'
+                    }}
+                  >
+                    {showLoginPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               <button 
