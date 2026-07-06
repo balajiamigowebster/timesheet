@@ -506,6 +506,10 @@ export default function App() {
         const url = getWhatsAppUrl('in', selectedUser, data.check_in || new Date().toLocaleTimeString());
         if (waWindow && url) {
           waWindow.location.href = url;
+          // Auto-close WhatsApp tab after 6 seconds to prevent blank tabs building up
+          setTimeout(() => {
+            if (waWindow && !waWindow.closed) waWindow.close();
+          }, 6000);
         } else if (waWindow) {
           waWindow.close();
         }
@@ -569,6 +573,10 @@ export default function App() {
         const url = getWhatsAppUrl('out', selectedUser, data.check_out || new Date().toLocaleTimeString());
         if (waWindow && url) {
           waWindow.location.href = url;
+          // Auto-close WhatsApp tab after 6 seconds to prevent blank tabs building up
+          setTimeout(() => {
+            if (waWindow && !waWindow.closed) waWindow.close();
+          }, 6000);
         } else if (waWindow) {
           waWindow.close();
         }
@@ -684,6 +692,10 @@ export default function App() {
             cleanPhone = '91' + cleanPhone;
           }
           waWindow.location.href = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
+          // Auto-close WhatsApp tab after 6 seconds to prevent blank tabs building up
+          setTimeout(() => {
+            if (waWindow && !waWindow.closed) waWindow.close();
+          }, 6000);
         }
 
         fetchStats();
