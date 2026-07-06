@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const db = require('./db');
-require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const { sendWhatsAppMessage } = require('./whatsapp');
 
 const app = express();
@@ -652,9 +653,15 @@ app.post('/api/login', (req, res) => {
   }
 });
 
-// Base Route
-app.get('/', (req, res) => {
-  res.send('Timesheet API is running...');
+// Serve static frontend files from 'public' folder
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Catch-all route to serve React's index.html for client-side routing
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Database migration to update WhatsApp phone numbers (from +91 9445332233 to +91 93424 66095)

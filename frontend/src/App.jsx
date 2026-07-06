@@ -26,7 +26,9 @@ import {
 const API_URL = import.meta.env.VITE_API_URL || 
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5001/api'
-    : 'https://amigowebster.in/attendancetimesheet/api');
+    : (window.location.pathname.includes('/attendancetimesheet')
+       ? `${window.location.origin}/attendancetimesheet/api`
+       : `${window.location.origin}/api`));
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
