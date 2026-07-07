@@ -534,6 +534,14 @@ body {
   background: rgba(96, 91, 229, 0.025);
 }
 
+.data-table tr.selected-row {
+  background: rgba(96, 91, 229, 0.06) !important;
+}
+
+.data-table tr.selected-row:hover {
+  background: rgba(96, 91, 229, 0.08) !important;
+}
+
 .truncate {
   white-space: nowrap;
   overflow: hidden;

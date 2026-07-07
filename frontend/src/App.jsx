@@ -45,6 +45,15 @@ export default function App() {
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+  const [selectedStaffIds, setSelectedStaffIds] = useState([]);
+  const [selectedLogIds, setSelectedLogIds] = useState([]);
+
+  useEffect(() => {
+    setSelectedStudentIds([]);
+    setSelectedStaffIds([]);
+    setSelectedLogIds([]);
+  }, [activeTab]);
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [students, setStudents] = useState([]);
@@ -727,6 +736,92 @@ export default function App() {
           }
         } catch (err) {
           showAlert('Server error', 'danger');
+        }
+      }
+    );
+  };
+
+  const handleBulkDeleteStudents = () => {
+    if (selectedStudentIds.length === 0) return;
+    showConfirm(
+      'Bulk Delete Students',
+      `Are you sure you want to delete the ${selectedStudentIds.length} selected student(s)? All their clock-in logs will also be permanently deleted.`,
+      async () => {
+        try {
+          const res = await fetch(`${API_URL}/students/bulk-delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: selectedStudentIds })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            showAlert(data.message || 'Students deleted successfully');
+            setSelectedStudentIds([]);
+            fetchStudents();
+            fetchStats();
+            fetchLogs();
+          } else {
+            showAlert(data.error || 'Failed to delete students', 'danger');
+          }
+        } catch (err) {
+          showAlert('Server connection error', 'danger');
+        }
+      }
+    );
+  };
+
+  const handleBulkDeleteStaff = () => {
+    if (selectedStaffIds.length === 0) return;
+    showConfirm(
+      'Bulk Delete Staff',
+      `Are you sure you want to delete the ${selectedStaffIds.length} selected staff member(s)? All their logs will be permanently deleted.`,
+      async () => {
+        try {
+          const res = await fetch(`${API_URL}/staff/bulk-delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: selectedStaffIds })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            showAlert(data.message || 'Staff deleted successfully');
+            setSelectedStaffIds([]);
+            fetchStaff();
+            fetchStats();
+            fetchLogs();
+          } else {
+            showAlert(data.error || 'Failed to delete staff members', 'danger');
+          }
+        } catch (err) {
+          showAlert('Server connection error', 'danger');
+        }
+      }
+    );
+  };
+
+  const handleBulkDeleteLogs = () => {
+    if (selectedLogIds.length === 0) return;
+    showConfirm(
+      'Bulk Delete Logs',
+      `Are you sure you want to delete the ${selectedLogIds.length} selected timesheet entry/entries?`,
+      async () => {
+        try {
+          const res = await fetch(`${API_URL}/timesheet/logs/bulk-delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: selectedLogIds })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            showAlert(data.message || 'Logs deleted successfully');
+            setSelectedLogIds([]);
+            fetchLogs();
+            fetchStats();
+          } else {
+            showAlert(data.error || 'Failed to delete log entries', 'danger');
+          }
+        } catch (err) {
+          showAlert('Server connection error', 'danger');
         }
       }
     );
@@ -1755,6 +1850,15 @@ export default function App() {
                 >
                   Export to Excel
                 </button>
+                {selectedStudentIds.length > 0 && (
+                  <button 
+                    className="btn btn-danger" 
+                    style={{ width: 'auto' }} 
+                    onClick={handleBulkDeleteStudents}
+                  >
+                    <Trash2 size={16} style={{ marginRight: '0.4rem' }} /> Delete Selected ({selectedStudentIds.length})
+                  </button>
+                )}
                 <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => setStudentModal({ show: true, mode: 'add', data: { student_id: generateNextStudentID() } })}>
                   <Plus size={16} /> Register Student
                 </button>
@@ -1766,6 +1870,20 @@ export default function App() {
               <table className="data-table">
                 <thead>
                   <tr>
+                    <th style={{ width: '40px' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={students.length > 0 && selectedStudentIds.length === students.length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedStudentIds(students.map(s => s.id));
+                          } else {
+                            setSelectedStudentIds([]);
+                          }
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      />
+                    </th>
                     <th>Student ID</th>
                     <th>Name</th>
                     <th>Phone</th>
@@ -1777,7 +1895,21 @@ export default function App() {
                 <tbody>
                   {students.length > 0 ? (
                     students.map(student => (
-                      <tr key={student.id}>
+                      <tr key={student.id} className={selectedStudentIds.includes(student.id) ? 'selected-row' : ''}>
+                        <td>
+                          <input 
+                            type="checkbox" 
+                            checked={selectedStudentIds.includes(student.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedStudentIds([...selectedStudentIds, student.id]);
+                              } else {
+                                setSelectedStudentIds(selectedStudentIds.filter(id => id !== student.id));
+                              }
+                            }}
+                            style={{ cursor: 'pointer' }}
+                          />
+                        </td>
                         <td style={{ fontWeight: 600, color: 'var(--primary)' }}>{student.student_id}</td>
                         <td style={{ fontWeight: 600 }}>{student.name}</td>
                         <td style={{ color: 'var(--text-secondary)' }}>{student.phone}</td>
@@ -1807,7 +1939,7 @@ export default function App() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                      <td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
                         No students registered. Click "Register Student" to add.
                       </td>
                     </tr>
@@ -1848,6 +1980,15 @@ export default function App() {
                 >
                   Export to Excel
                 </button>
+                {selectedStaffIds.length > 0 && (
+                  <button 
+                    className="btn btn-danger" 
+                    style={{ width: 'auto' }} 
+                    onClick={handleBulkDeleteStaff}
+                  >
+                    <Trash2 size={16} style={{ marginRight: '0.4rem' }} /> Delete Selected ({selectedStaffIds.length})
+                  </button>
+                )}
                 <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => setStaffModal({ show: true, mode: 'add', data: { staff_id: generateNextStaffID() } })}>
                   <Plus size={16} /> Register Staff
                 </button>
@@ -1859,6 +2000,20 @@ export default function App() {
               <table className="data-table">
                 <thead>
                   <tr>
+                    <th style={{ width: '40px' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={staff.length > 0 && selectedStaffIds.length === staff.length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedStaffIds(staff.map(m => m.id));
+                          } else {
+                            setSelectedStaffIds([]);
+                          }
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      />
+                    </th>
                     <th>Staff ID</th>
                     <th>Name</th>
                     <th>Phone</th>
@@ -1870,7 +2025,21 @@ export default function App() {
                 <tbody>
                   {staff.length > 0 ? (
                     staff.map(member => (
-                      <tr key={member.id}>
+                      <tr key={member.id} className={selectedStaffIds.includes(member.id) ? 'selected-row' : ''}>
+                        <td>
+                          <input 
+                            type="checkbox" 
+                            checked={selectedStaffIds.includes(member.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedStaffIds([...selectedStaffIds, member.id]);
+                              } else {
+                                setSelectedStaffIds(selectedStaffIds.filter(id => id !== member.id));
+                              }
+                            }}
+                            style={{ cursor: 'pointer' }}
+                          />
+                        </td>
                         <td style={{ fontWeight: 600, color: 'var(--secondary)' }}>{member.staff_id}</td>
                         <td style={{ fontWeight: 600 }}>{member.name}</td>
                         <td style={{ color: 'var(--text-secondary)' }}>{member.phone}</td>
@@ -1900,7 +2069,7 @@ export default function App() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                      <td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
                         No staff members registered. Click "Register Staff" to add.
                       </td>
                     </tr>
@@ -1927,6 +2096,15 @@ export default function App() {
                 <button className="btn btn-outline" style={{ width: 'auto' }} onClick={handleExportLogsCSV}>
                   <Download size={16} /> Export to Excel
                 </button>
+                {selectedLogIds.length > 0 && (
+                  <button 
+                    className="btn btn-danger" 
+                    style={{ width: 'auto' }} 
+                    onClick={handleBulkDeleteLogs}
+                  >
+                    <Trash2 size={16} style={{ marginRight: '0.4rem' }} /> Delete Selected ({selectedLogIds.length})
+                  </button>
+                )}
                 <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => setManualLogModal(true)}>
                   <Plus size={16} /> Add Manual Log
                 </button>
@@ -2009,6 +2187,20 @@ export default function App() {
               <table className="data-table">
                 <thead>
                   <tr>
+                    <th style={{ width: '40px' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={logs.length > 0 && selectedLogIds.length === logs.length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedLogIds(logs.map(log => log.id));
+                          } else {
+                            setSelectedLogIds([]);
+                          }
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      />
+                    </th>
                     <th>Type</th>
                     <th>ID Code</th>
                     <th>Name</th>
@@ -2025,7 +2217,21 @@ export default function App() {
                 <tbody>
                   {logs.length > 0 ? (
                     logs.map(log => (
-                      <tr key={log.id}>
+                      <tr key={log.id} className={selectedLogIds.includes(log.id) ? 'selected-row' : ''}>
+                        <td>
+                          <input 
+                            type="checkbox" 
+                            checked={selectedLogIds.includes(log.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedLogIds([...selectedLogIds, log.id]);
+                              } else {
+                                setSelectedLogIds(selectedLogIds.filter(id => id !== log.id));
+                              }
+                            }}
+                            style={{ cursor: 'pointer' }}
+                          />
+                        </td>
                         <td>
                           <span className={`badge ${log.user_type === 'student' ? 'badge-student' : 'badge-staff'}`}>
                             {log.user_type}
@@ -2122,7 +2328,7 @@ export default function App() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="10" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                      <td colSpan="12" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
                         No entry logs found matching the filter options.
                       </td>
                     </tr>

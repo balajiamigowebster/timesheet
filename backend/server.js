@@ -167,6 +167,21 @@ app.delete('/api/students/:id', async (req, res) => {
   }
 });
 
+// Bulk delete students
+app.post('/api/students/bulk-delete', async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: 'Invalid or empty IDs array' });
+  }
+  try {
+    await db.query('DELETE FROM students WHERE id IN (?)', [ids]);
+    res.json({ message: `Successfully deleted ${ids.length} student(s)` });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to bulk delete students' });
+  }
+});
+
 // ==========================================
 // 2. STAFF ENDPOINTS
 // ==========================================
@@ -279,6 +294,21 @@ app.delete('/api/staff/:id', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to delete staff' });
+  }
+});
+
+// Bulk delete staff members
+app.post('/api/staff/bulk-delete', async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: 'Invalid or empty IDs array' });
+  }
+  try {
+    await db.query('DELETE FROM staff WHERE id IN (?)', [ids]);
+    res.json({ message: `Successfully deleted ${ids.length} staff member(s)` });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to bulk delete staff members' });
   }
 });
 
@@ -567,6 +597,21 @@ app.delete('/api/timesheet/logs/:id', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to delete log entry' });
+  }
+});
+
+// Bulk delete timesheet entry logs
+app.post('/api/timesheet/logs/bulk-delete', async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: 'Invalid or empty IDs array' });
+  }
+  try {
+    await db.query('DELETE FROM timesheet_entries WHERE id IN (?)', [ids]);
+    res.json({ message: `Successfully deleted ${ids.length} log entry/entries` });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to bulk delete log entries' });
   }
 });
 
