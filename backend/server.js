@@ -26,7 +26,7 @@ app.use((req, res, next) => {
 // Helper to format WhatsApp dates and times
 function formatWhatsAppMessageParts(dateObj) {
   const d = dateObj ? new Date(dateObj) : new Date();
-  
+
   // Time formatting: 6.00pm
   let hours = d.getHours();
   const minutes = d.getMinutes();
@@ -35,13 +35,13 @@ function formatWhatsAppMessageParts(dateObj) {
   hours = hours ? hours : 12; // 0 should be 12
   const minStr = minutes < 10 ? '0' + minutes : minutes;
   const timeStr = `${hours}.${minStr}${ampm}`;
-  
+
   // Date formatting: D/M/YYYY
   const day = d.getDate();
   const month = d.getMonth() + 1;
   const year = d.getFullYear();
   const dateStr = `${day}/${month}/${year}`;
-  
+
   return { timeStr, dateStr };
 }
 
@@ -429,12 +429,12 @@ app.post('/api/timesheet/check-in', async (req, res) => {
         (user_type, student_ref_id, staff_ref_id, date, check_in, purpose, notes, latitude_in, longitude_in, photo_in) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        user_type, 
-        studentRefVal, 
-        staffRefVal, 
-        currentDate, 
-        localDateTime, 
-        purpose || 'General', 
+        user_type,
+        studentRefVal,
+        staffRefVal,
+        currentDate,
+        localDateTime,
+        purpose || 'General',
         notes || '',
         latitude || null,
         longitude || null,
@@ -452,7 +452,7 @@ app.post('/api/timesheet/check-in', async (req, res) => {
     const user = userCheck[0];
     if (user && user.phone) {
       const parts = formatWhatsAppMessageParts(now);
-      const msg = `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked in at ${parts.timeStr} on ${parts.dateStr} for ${purpose || 'General'} - Madhu's Phonics & Handwriting....Thank you`;
+      const msg = `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked in at ${parts.timeStr} on ${parts.dateStr}  Madhu's Phonics & Handwriting....Thank you for more info www.madhusphonics.in`;
       sendWhatsAppMessage(user.phone, msg).catch(err => console.error('Error sending WhatsApp check-in:', err));
     }
   } catch (error) {
