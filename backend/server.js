@@ -537,7 +537,7 @@ app.post('/api/timesheet/check-out', async (req, res) => {
       if (entryCheck.length > 0 && entryCheck[0].phone) {
         const entry = entryCheck[0];
         const parts = formatWhatsAppMessageParts(new Date(entry.check_out));
-        const msg = `*From Madhusphonics*\n\nHello ${entry.name}, you have successfully checked out at ${parts.timeStr} on ${parts.dateStr} - Madhu's Phonics & Handwriting....Thank you`;
+        const msg = `*From Madhusphonics*\n\nHello ${entry.name}, you have successfully checked out at ${parts.timeStr} on ${parts.dateStr} - Madhu's Phonics & Handwriting....Thank you for more info www.madhusphonics.in`;
         sendWhatsAppMessage(entry.phone, msg).catch(err => console.error('Error sending WhatsApp check-out:', err));
       }
     } catch (notificationError) {
