@@ -1828,7 +1828,7 @@ export default function App() {
                 <h1>Students Directory</h1>
                 <p>Manage enrolled students details, view logs, and add new registrations.</p>
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <div className="header-actions">
                 <input 
                   type="file" 
                   accept=".csv" 
@@ -1958,7 +1958,7 @@ export default function App() {
                 <h1>Staff Directory</h1>
                 <p>Manage academic and laboratory staff profiles and registrations.</p>
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <div className="header-actions">
                 <input 
                   type="file" 
                   accept=".csv" 
@@ -2088,7 +2088,7 @@ export default function App() {
                 <h1>Timesheet Entry Logs</h1>
                 <p>View full details of historical clock-ins, clock-outs, and query logs.</p>
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div className="header-actions">
                 <label className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', margin: 0, width: 'auto' }}>
                   <Upload size={16} /> Import Excel/CSV
                   <input type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportLogsCSV} />
