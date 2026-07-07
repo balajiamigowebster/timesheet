@@ -472,19 +472,10 @@ export default function App() {
       ? `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked in at ${timeStr} on ${dateStr} for ${terminalPurpose || 'General'} - Madhu's Phonics & Handwriting....Thank you`
       : `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked out at ${timeStr} on ${dateStr} - Madhu's Phonics & Handwriting....Thank you`;
 
-    return `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
+    return `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
   };
 
   const executeCheckIn = async (photoBase64) => {
-    // Pre-open the window to bypass Chrome's popup blocker
-    let waWindow = null;
-    if (selectedUser && selectedUser.phone) {
-      waWindow = window.open('', '_blank');
-      if (waWindow) {
-        waWindow.document.write('<html><head><title>WhatsApp Redirection</title></head><body style="font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; background:#111b21; color:#e9edef;"><h2>Redirecting to WhatsApp Web...</h2></body></html>');
-      }
-    }
-
     try {
       const res = await fetch(`${API_URL}/timesheet/check-in`, {
         method: 'POST',
@@ -505,16 +496,10 @@ export default function App() {
       if (res.ok) {
         showAlert(`Successfully clocked-in ${selectedUser.name}`);
         
-        // Trigger WhatsApp Redirect using pre-opened window
+        // Trigger WhatsApp Redirect directly without opening a new tab
         const url = getWhatsAppUrl('in', selectedUser, data.check_in || new Date().toLocaleTimeString());
-        if (waWindow && url) {
-          waWindow.location.href = url;
-          // Auto-close WhatsApp tab after 6 seconds to prevent blank tabs building up
-          setTimeout(() => {
-            if (waWindow && !waWindow.closed) waWindow.close();
-          }, 6000);
-        } else if (waWindow) {
-          waWindow.close();
+        if (url) {
+          window.location.href = url;
         }
 
         setSelectedUser(null);
@@ -524,25 +509,14 @@ export default function App() {
         fetchStats();
         fetchLogs();
       } else {
-        if (waWindow) waWindow.close();
         showAlert(data.error || 'Clock-in failed', 'danger');
       }
     } catch (err) {
-      if (waWindow) waWindow.close();
       showAlert('Server connection error', 'danger');
     }
   };
 
   const executeCheckOut = async (photoBase64) => {
-    // Pre-open the window to bypass Chrome's popup blocker
-    let waWindow = null;
-    if (selectedUser && selectedUser.phone) {
-      waWindow = window.open('', '_blank');
-      if (waWindow) {
-        waWindow.document.write('<html><head><title>WhatsApp Redirection</title></head><body style="font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; background:#111b21; color:#e9edef;"><h2>Redirecting to WhatsApp Web...</h2></body></html>');
-      }
-    }
-
     try {
       const payload = activeCheckInRecord 
         ? { 
@@ -572,16 +546,10 @@ export default function App() {
       if (res.ok) {
         showAlert(`Successfully clocked-out ${selectedUser.name}`);
         
-        // Trigger WhatsApp Redirect using pre-opened window
+        // Trigger WhatsApp Redirect directly without opening a new tab
         const url = getWhatsAppUrl('out', selectedUser, data.check_out || new Date().toLocaleTimeString());
-        if (waWindow && url) {
-          waWindow.location.href = url;
-          // Auto-close WhatsApp tab after 6 seconds to prevent blank tabs building up
-          setTimeout(() => {
-            if (waWindow && !waWindow.closed) waWindow.close();
-          }, 6000);
-        } else if (waWindow) {
-          waWindow.close();
+        if (url) {
+          window.location.href = url;
         }
 
         setSelectedUser(null);
@@ -590,11 +558,9 @@ export default function App() {
         fetchStats();
         fetchLogs();
       } else {
-        if (waWindow) waWindow.close();
         showAlert(data.error || 'Clock-out failed', 'danger');
       }
     } catch (err) {
-      if (waWindow) waWindow.close();
       showAlert('Server connection error', 'danger');
     }
   };
@@ -653,15 +619,6 @@ export default function App() {
     const list = type === 'student' ? students : staff;
     const user = list.find(u => u.id === parsedUserId);
 
-    // Pre-open the window to bypass Chrome's popup blocker
-    let waWindow = null;
-    if (user && user.phone) {
-      waWindow = window.open('', '_blank');
-      if (waWindow) {
-        waWindow.document.write('<html><head><title>WhatsApp Redirection</title></head><body style="font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; background:#111b21; color:#e9edef;"><h2>Redirecting to WhatsApp Web...</h2></body></html>');
-      }
-    }
-
     const entryPayload = {
       user_type: type,
       user_id: parsedUserId,
@@ -685,8 +642,8 @@ export default function App() {
         showAlert('Manual log entry created successfully');
         setManualLogModal(false);
 
-        // Trigger WhatsApp Redirect using pre-opened window
-        if (waWindow && user && user.phone) {
+        // Trigger WhatsApp Redirect directly without opening a new tab
+        if (user && user.phone) {
           const inParts = formatWhatsAppDateTime(`${payload.date} ${payload.check_in_time}:00`);
           const outParts = formatWhatsAppDateTime(`${payload.date} ${payload.check_out_time}:00`);
           const msg = `*From Madhusphonics*\n\nHello ${user.name}, a manual timesheet log has been created for you on ${inParts.dateStr}. Clock-In: ${inParts.timeStr}, Clock-Out: ${outParts.timeStr} for ${payload.purpose || 'General'} - Madhu's Phonics & Handwriting....Thank you`;
@@ -694,21 +651,15 @@ export default function App() {
           if (cleanPhone.length === 10 && /^\d+$/.test(cleanPhone)) {
             cleanPhone = '91' + cleanPhone;
           }
-          waWindow.location.href = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
-          // Auto-close WhatsApp tab after 6 seconds to prevent blank tabs building up
-          setTimeout(() => {
-            if (waWindow && !waWindow.closed) waWindow.close();
-          }, 6000);
+          window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
         }
 
         fetchStats();
         fetchLogs();
       } else {
-        if (waWindow) waWindow.close();
         showAlert(data.error || 'Failed to create log', 'danger');
       }
     } catch (err) {
-      if (waWindow) waWindow.close();
       showAlert('Server connection error', 'danger');
     }
   };
