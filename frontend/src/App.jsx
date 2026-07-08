@@ -52,6 +52,14 @@ export default function App() {
   const [staffPage, setStaffPage] = useState(1);
   const [logPage, setLogPage] = useState(1);
 
+  // Student and Staff directory filter states
+  const [studentSearch, setStudentSearch] = useState('');
+  const [studentDeptFilter, setStudentDeptFilter] = useState('');
+  const [studentBatchFilter, setStudentBatchFilter] = useState('');
+
+  const [staffSearch, setStaffSearch] = useState('');
+  const [staffDeptFilter, setStaffDeptFilter] = useState('');
+
   useEffect(() => {
     setSelectedStudentIds([]);
     setSelectedStaffIds([]);
@@ -59,7 +67,20 @@ export default function App() {
     setStudentPage(1);
     setStaffPage(1);
     setLogPage(1);
+    setStudentSearch('');
+    setStudentDeptFilter('');
+    setStudentBatchFilter('');
+    setStaffSearch('');
+    setStaffDeptFilter('');
   }, [activeTab]);
+
+  useEffect(() => {
+    setStudentPage(1);
+  }, [studentSearch, studentDeptFilter, studentBatchFilter]);
+
+  useEffect(() => {
+    setStaffPage(1);
+  }, [staffSearch, staffDeptFilter]);
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [students, setStudents] = useState([]);
@@ -1399,12 +1420,37 @@ export default function App() {
 
   const ITEMS_PER_PAGE = 10;
 
+  // Client-side search and filtering for students
+  const filteredStudents = students.filter(student => {
+    const matchesSearch = 
+      student.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
+      student.student_id.toLowerCase().includes(studentSearch.toLowerCase()) ||
+      (student.phone && student.phone.replace(/[\s\-()]/g, '').includes(studentSearch.replace(/[\s\-()]/g, '')));
+      
+    const matchesDept = !studentDeptFilter || student.department === studentDeptFilter;
+    const matchesBatch = !studentBatchFilter || student.batch === studentBatchFilter;
+    
+    return matchesSearch && matchesDept && matchesBatch;
+  });
+
+  // Client-side search and filtering for staff
+  const filteredStaff = staff.filter(member => {
+    const matchesSearch = 
+      member.name.toLowerCase().includes(staffSearch.toLowerCase()) ||
+      member.staff_id.toLowerCase().includes(staffSearch.toLowerCase()) ||
+      (member.phone && member.phone.replace(/[\s\-()]/g, '').includes(staffSearch.replace(/[\s\-()]/g, '')));
+      
+    const matchesDept = !staffDeptFilter || member.department === staffDeptFilter;
+    
+    return matchesSearch && matchesDept;
+  });
+
   // Pagination slice calculations
   const studentStartIndex = (studentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedStudents = students.slice(studentStartIndex, studentStartIndex + ITEMS_PER_PAGE);
+  const paginatedStudents = filteredStudents.slice(studentStartIndex, studentStartIndex + ITEMS_PER_PAGE);
 
   const staffStartIndex = (staffPage - 1) * ITEMS_PER_PAGE;
-  const paginatedStaff = staff.slice(staffStartIndex, staffStartIndex + ITEMS_PER_PAGE);
+  const paginatedStaff = filteredStaff.slice(staffStartIndex, staffStartIndex + ITEMS_PER_PAGE);
 
   const logStartIndex = (logPage - 1) * ITEMS_PER_PAGE;
   const paginatedLogs = logs.slice(logStartIndex, logStartIndex + ITEMS_PER_PAGE);
@@ -1964,6 +2010,58 @@ export default function App() {
               </div>
             </div>
 
+            {/* Filter controls */}
+            <div className="card filter-bar">
+              <div className="filter-search" style={{ position: 'relative' }}>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  style={{ paddingLeft: '2.5rem' }}
+                  placeholder="Search by Name, ID, or Phone..."
+                  value={studentSearch}
+                  onChange={(e) => setStudentSearch(e.target.value)}
+                />
+                <Search size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              </div>
+
+              <div>
+                <select 
+                  className="form-select"
+                  value={studentDeptFilter}
+                  onChange={(e) => setStudentDeptFilter(e.target.value)}
+                >
+                  <option value="">All Departments</option>
+                  <option value="Phonics">Phonics</option>
+                  <option value="Handwriting">Handwriting</option>
+                </select>
+              </div>
+
+              <div>
+                <input 
+                  type="text" 
+                  className="form-input"
+                  placeholder="Filter by Batch (e.g. 2026)..."
+                  value={studentBatchFilter}
+                  onChange={(e) => setStudentBatchFilter(e.target.value)}
+                />
+              </div>
+
+              {(studentSearch || studentDeptFilter || studentBatchFilter) && (
+                <button 
+                  type="button"
+                  className="btn btn-outline" 
+                  style={{ width: 'auto', padding: '0.6rem 1rem' }}
+                  onClick={() => {
+                    setStudentSearch('');
+                    setStudentDeptFilter('');
+                    setStudentBatchFilter('');
+                  }}
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+
             {/* Students List Display */}
             <div className="card table-card">
               <table className="data-table">
@@ -2045,7 +2143,7 @@ export default function App() {
                   )}
                 </tbody>
               </table>
-              {renderPagination(studentPage, students.length, setStudentPage)}
+              {renderPagination(studentPage, filteredStudents.length, setStudentPage)}
             </div>
           </div>
         )}
@@ -2093,6 +2191,48 @@ export default function App() {
                   <Plus size={16} /> Register Staff
                 </button>
               </div>
+            </div>
+
+            {/* Filter controls */}
+            <div className="card filter-bar">
+              <div className="filter-search" style={{ position: 'relative' }}>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  style={{ paddingLeft: '2.5rem' }}
+                  placeholder="Search by Name, ID, or Phone..."
+                  value={staffSearch}
+                  onChange={(e) => setStaffSearch(e.target.value)}
+                />
+                <Search size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              </div>
+
+              <div>
+                <select 
+                  className="form-select"
+                  value={staffDeptFilter}
+                  onChange={(e) => setStaffDeptFilter(e.target.value)}
+                >
+                  <option value="">All Departments</option>
+                  <option value="Phonics">Phonics</option>
+                  <option value="Handwriting">Handwriting</option>
+                  <option value="Administration">Administration</option>
+                </select>
+              </div>
+
+              {(staffSearch || staffDeptFilter) && (
+                <button 
+                  type="button"
+                  className="btn btn-outline" 
+                  style={{ width: 'auto', padding: '0.6rem 1rem' }}
+                  onClick={() => {
+                    setStaffSearch('');
+                    setStaffDeptFilter('');
+                  }}
+                >
+                  Clear Filters
+                </button>
+              )}
             </div>
 
             {/* Staff List Display */}
@@ -2176,7 +2316,7 @@ export default function App() {
                   )}
                 </tbody>
               </table>
-              {renderPagination(staffPage, staff.length, setStaffPage)}
+              {renderPagination(staffPage, filteredStaff.length, setStaffPage)}
             </div>
           </div>
         )}
