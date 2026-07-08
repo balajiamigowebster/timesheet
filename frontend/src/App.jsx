@@ -48,11 +48,17 @@ export default function App() {
   const [selectedStudentIds, setSelectedStudentIds] = useState([]);
   const [selectedStaffIds, setSelectedStaffIds] = useState([]);
   const [selectedLogIds, setSelectedLogIds] = useState([]);
+  const [studentPage, setStudentPage] = useState(1);
+  const [staffPage, setStaffPage] = useState(1);
+  const [logPage, setLogPage] = useState(1);
 
   useEffect(() => {
     setSelectedStudentIds([]);
     setSelectedStaffIds([]);
     setSelectedLogIds([]);
+    setStudentPage(1);
+    setStaffPage(1);
+    setLogPage(1);
   }, [activeTab]);
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -299,6 +305,7 @@ export default function App() {
   // Trigger search on filter changes
   useEffect(() => {
     fetchLogs();
+    setLogPage(1);
   }, [logFilter]);
 
   // Terminal Autocomplete Search
@@ -1390,6 +1397,98 @@ export default function App() {
     );
   }
 
+  const ITEMS_PER_PAGE = 10;
+
+  // Pagination slice calculations
+  const studentStartIndex = (studentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedStudents = students.slice(studentStartIndex, studentStartIndex + ITEMS_PER_PAGE);
+
+  const staffStartIndex = (staffPage - 1) * ITEMS_PER_PAGE;
+  const paginatedStaff = staff.slice(staffStartIndex, staffStartIndex + ITEMS_PER_PAGE);
+
+  const logStartIndex = (logPage - 1) * ITEMS_PER_PAGE;
+  const paginatedLogs = logs.slice(logStartIndex, logStartIndex + ITEMS_PER_PAGE);
+
+  // Pagination component helper
+  const renderPagination = (currentPage, totalItems, onPageChange) => {
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    if (totalPages <= 1) return null;
+
+    // Show max 5 page buttons
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    if (endPage - startPage < 4) {
+      startPage = Math.max(1, endPage - 4);
+    }
+
+    const pages = [];
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    return (
+      <div className="pagination-container" style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '1rem 1.5rem',
+        borderTop: '1px solid var(--card-border)',
+        flexWrap: 'wrap',
+        gap: '1rem',
+        background: 'rgba(255, 255, 255, 0.01)'
+      }}>
+        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+          Showing {totalItems === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(totalItems, currentPage * ITEMS_PER_PAGE)} of {totalItems} entries
+        </span>
+        <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="btn btn-outline"
+            style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', width: 'auto', opacity: currentPage === 1 ? 0.5 : 1 }}
+            disabled={currentPage === 1}
+            onClick={() => onPageChange(currentPage - 1)}
+          >
+            Previous
+          </button>
+          
+          {pages.map(page => (
+            <button
+              type="button"
+              key={page}
+              className={`btn ${page === currentPage ? 'btn-primary' : 'btn-outline'}`}
+              style={{ 
+                padding: '0', 
+                fontSize: '0.8rem', 
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: page === currentPage ? 'var(--primary)' : 'transparent',
+                color: page === currentPage ? '#fff' : 'var(--text-primary)',
+                borderColor: page === currentPage ? 'var(--primary)' : 'var(--card-border)',
+                fontWeight: page === currentPage ? '700' : 'normal'
+              }}
+              onClick={() => onPageChange(page)}
+            >
+              {page}
+            </button>
+          ))}
+
+          <button
+            type="button"
+            className="btn btn-outline"
+            style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', width: 'auto', opacity: currentPage === totalPages ? 0.5 : 1 }}
+            disabled={currentPage === totalPages}
+            onClick={() => onPageChange(currentPage + 1)}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="app-container">
       {/* Mobile Header Bar */}
@@ -1893,8 +1992,8 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {students.length > 0 ? (
-                    students.map(student => (
+                  {paginatedStudents.length > 0 ? (
+                    paginatedStudents.map(student => (
                       <tr key={student.id} className={selectedStudentIds.includes(student.id) ? 'selected-row' : ''}>
                         <td>
                           <input 
@@ -1946,6 +2045,7 @@ export default function App() {
                   )}
                 </tbody>
               </table>
+              {renderPagination(studentPage, students.length, setStudentPage)}
             </div>
           </div>
         )}
@@ -2023,8 +2123,8 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {staff.length > 0 ? (
-                    staff.map(member => (
+                  {paginatedStaff.length > 0 ? (
+                    paginatedStaff.map(member => (
                       <tr key={member.id} className={selectedStaffIds.includes(member.id) ? 'selected-row' : ''}>
                         <td>
                           <input 
@@ -2076,6 +2176,7 @@ export default function App() {
                   )}
                 </tbody>
               </table>
+              {renderPagination(staffPage, staff.length, setStaffPage)}
             </div>
           </div>
         )}
@@ -2215,8 +2316,8 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {logs.length > 0 ? (
-                    logs.map(log => (
+                  {paginatedLogs.length > 0 ? (
+                    paginatedLogs.map(log => (
                       <tr key={log.id} className={selectedLogIds.includes(log.id) ? 'selected-row' : ''}>
                         <td>
                           <input 
@@ -2335,6 +2436,7 @@ export default function App() {
                   )}
                 </tbody>
               </table>
+              {renderPagination(logPage, logs.length, setLogPage)}
             </div>
           </div>
         )}
