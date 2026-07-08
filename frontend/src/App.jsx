@@ -2398,14 +2398,15 @@ export default function App() {
 
               <div className="form-group">
                 <label className="form-label">Department</label>
-                <input 
-                  type="text" 
+                <select 
                   name="department" 
                   required 
-                  className="form-input" 
-                  placeholder="e.g. Computer Science"
-                  defaultValue={studentModal.mode === 'edit' ? studentModal.data.department : ''}
-                />
+                  className="form-select"
+                  defaultValue={studentModal.mode === 'edit' ? studentModal.data.department : 'Phonics'}
+                >
+                  <option value="Phonics">Phonics</option>
+                  <option value="Handwriting">Handwriting</option>
+                </select>
               </div>
 
               <div className="form-group">
@@ -2490,14 +2491,16 @@ export default function App() {
 
               <div className="form-group">
                 <label className="form-label">Department</label>
-                <input 
-                  type="text" 
+                <select 
                   name="department" 
                   required 
-                  className="form-input" 
-                  placeholder="e.g. Physics"
-                  defaultValue={staffModal.mode === 'edit' ? staffModal.data.department : ''}
-                />
+                  className="form-select"
+                  defaultValue={staffModal.mode === 'edit' ? staffModal.data.department : 'Phonics'}
+                >
+                  <option value="Phonics">Phonics</option>
+                  <option value="Handwriting">Handwriting</option>
+                  <option value="Administration">Administration</option>
+                </select>
               </div>
 
               <div className="form-group">
