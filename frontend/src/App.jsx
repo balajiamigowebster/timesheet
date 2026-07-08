@@ -683,7 +683,7 @@ export default function App() {
         if (user && user.phone) {
           const inParts = formatWhatsAppDateTime(`${payload.date} ${payload.check_in_time}:00`);
           const outParts = formatWhatsAppDateTime(`${payload.date} ${payload.check_out_time}:00`);
-          const msg = `*From Madhusphonics*\n\nHello ${user.name}, a manual timesheet log has been created for you on ${inParts.dateStr}. Clock-In: ${inParts.timeStr}, Clock-Out: ${outParts.timeStr} for ${payload.purpose || 'General'} - Madhu's Phonics & Handwriting....Thank you\n\nFor more info: www.madhusphonics.in.`;
+          const msg = `*From Madhusphonics*\n\nHello ${user.name}, a manual timesheet log has been created for you on ${inParts.dateStr}. Clock-In: ${inParts.timeStr}, Clock-Out: ${outParts.timeStr} - Madhu's Phonics & Handwriting....Thank you\n\nFor more info: www.madhusphonics.in.`;
           let cleanPhone = user.phone.replace(/[\s\-()]/g, '');
           if (cleanPhone.length === 10 && /^\d+$/.test(cleanPhone)) {
             cleanPhone = '91' + cleanPhone;
