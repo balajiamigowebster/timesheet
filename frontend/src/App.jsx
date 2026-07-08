@@ -506,8 +506,8 @@ export default function App() {
     const { timeStr, dateStr } = formatWhatsAppDateTime(rawDateTime);
 
     const message = actionType === 'in'
-      ? `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked in at ${timeStr} on ${dateStr} for ${terminalPurpose || 'General'} - Madhu's Phonics & Handwriting....Thank you`
-      : `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked out at ${timeStr} on ${dateStr} - Madhu's Phonics & Handwriting....Thank you`;
+      ? `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked in at ${timeStr} on ${dateStr} for ${terminalPurpose || 'General'} - Madhu's Phonics & Handwriting....Thank you\n\nFor more info: www.madhusphonics.in.`
+      : `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked out at ${timeStr} on ${dateStr} - Madhu's Phonics & Handwriting....Thank you\n\nFor more info: www.madhusphonics.in.`;
 
     return `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
   };
@@ -683,7 +683,7 @@ export default function App() {
         if (user && user.phone) {
           const inParts = formatWhatsAppDateTime(`${payload.date} ${payload.check_in_time}:00`);
           const outParts = formatWhatsAppDateTime(`${payload.date} ${payload.check_out_time}:00`);
-          const msg = `*From Madhusphonics*\n\nHello ${user.name}, a manual timesheet log has been created for you on ${inParts.dateStr}. Clock-In: ${inParts.timeStr}, Clock-Out: ${outParts.timeStr} for ${payload.purpose || 'General'} - Madhu's Phonics & Handwriting....Thank you`;
+          const msg = `*From Madhusphonics*\n\nHello ${user.name}, a manual timesheet log has been created for you on ${inParts.dateStr}. Clock-In: ${inParts.timeStr}, Clock-Out: ${outParts.timeStr} for ${payload.purpose || 'General'} - Madhu's Phonics & Handwriting....Thank you\n\nFor more info: www.madhusphonics.in.`;
           let cleanPhone = user.phone.replace(/[\s\-()]/g, '');
           if (cleanPhone.length === 10 && /^\d+$/.test(cleanPhone)) {
             cleanPhone = '91' + cleanPhone;
