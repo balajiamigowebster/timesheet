@@ -109,6 +109,17 @@ export default function App() {
   const [studentModal, setStudentModal] = useState({ show: false, mode: 'add', data: null });
   const [staffModal, setStaffModal] = useState({ show: false, mode: 'add', data: null });
   const [manualLogModal, setManualLogModal] = useState(false);
+  const [manualUserSearch, setManualUserSearch] = useState('');
+  const [selectedManualUser, setSelectedManualUser] = useState(null);
+  const [isManualUserDropdownOpen, setIsManualUserDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    if (!manualLogModal) {
+      setManualUserSearch('');
+      setSelectedManualUser(null);
+      setIsManualUserDropdownOpen(false);
+    }
+  }, [manualLogModal]);
 
   // Terminal Console States
   const [terminalUserType, setTerminalUserType] = useState('student');
@@ -1443,6 +1454,27 @@ export default function App() {
     const matchesDept = !staffDeptFilter || member.department === staffDeptFilter;
     
     return matchesSearch && matchesDept;
+  });
+
+  // Combined search and filtering for the manual log user selection dropdown
+  const filteredManualStudents = students.filter(student => {
+    const term = manualUserSearch.toLowerCase().trim();
+    if (!term) return true;
+    return (
+      student.name.toLowerCase().includes(term) ||
+      student.student_id.toLowerCase().includes(term) ||
+      (student.phone && student.phone.replace(/[\s\-()]/g, '').includes(term.replace(/[\s\-()]/g, '')))
+    );
+  });
+
+  const filteredManualStaff = staff.filter(member => {
+    const term = manualUserSearch.toLowerCase().trim();
+    if (!term) return true;
+    return (
+      member.name.toLowerCase().includes(term) ||
+      member.staff_id.toLowerCase().includes(term) ||
+      (member.phone && member.phone.replace(/[\s\-()]/g, '').includes(term.replace(/[\s\-()]/g, '')))
+    );
   });
 
   // Pagination slice calculations
@@ -2786,25 +2818,188 @@ export default function App() {
             </div>
             
             <form onSubmit={handleManualLogSubmit}>
-              <div className="form-group">
+              <div className="form-group" style={{ position: 'relative' }}>
                 <label className="form-label">Select User (Student or Staff)</label>
-                <select name="manual_user" required className="form-select">
-                  <option value="">-- Choose User --</option>
-                  <optgroup label="Students">
-                    {students.map(s => (
-                      <option key={`stud-${s.id}`} value={`student:${s.id}`}>
-                        {s.name} ({s.student_id} - Student)
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Staff Members">
-                    {staff.map(st => (
-                      <option key={`stf-${st.id}`} value={`staff:${st.id}`}>
-                        {st.name} ({st.staff_id} - Staff)
-                      </option>
-                    ))}
-                  </optgroup>
-                </select>
+                
+                {/* Search Input Box / Selected User Display */}
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="🔍 Search name, ID, or phone..."
+                    style={{ paddingRight: '2.5rem', cursor: 'pointer' }}
+                    value={isManualUserDropdownOpen ? manualUserSearch : (selectedManualUser ? selectedManualUser.display : '')}
+                    onChange={(e) => {
+                      setManualUserSearch(e.target.value);
+                      setIsManualUserDropdownOpen(true);
+                    }}
+                    onFocus={() => setIsManualUserDropdownOpen(true)}
+                    required={!selectedManualUser}
+                  />
+                  {selectedManualUser && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedManualUser(null);
+                        setManualUserSearch('');
+                      }}
+                      style={{
+                        position: 'absolute',
+                        right: '0.75rem',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Hidden input to pass value during submit */}
+                <input 
+                  type="hidden" 
+                  name="manual_user" 
+                  value={selectedManualUser ? `${selectedManualUser.type}:${selectedManualUser.id}` : ''} 
+                  required 
+                />
+
+                {/* Dropdown Options List */}
+                {isManualUserDropdownOpen && (
+                  <>
+                    {/* Overlay to close the dropdown when clicking outside */}
+                    <div 
+                      style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        zIndex: 999
+                      }}
+                      onClick={() => setIsManualUserDropdownOpen(false)}
+                    />
+                    
+                    <div className="card" style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      maxHeight: '260px',
+                      overflowY: 'auto',
+                      zIndex: 1000,
+                      marginTop: '0.35rem',
+                      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)',
+                      background: 'var(--card-bg)',
+                      border: '1px solid var(--card-border)',
+                      borderRadius: 'var(--radius-md)'
+                    }}>
+                      
+                      {filteredManualStudents.length === 0 && filteredManualStaff.length === 0 ? (
+                        <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                          No matching users found
+                        </div>
+                      ) : (
+                        <>
+                          {filteredManualStudents.length > 0 && (
+                            <div>
+                              <div style={{ 
+                                padding: '0.4rem 0.8rem', 
+                                background: 'rgba(255, 73, 121, 0.05)', 
+                                color: 'var(--primary)', 
+                                fontSize: '0.75rem', 
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em'
+                              }}>
+                                Students
+                              </div>
+                              {filteredManualStudents.map(s => (
+                                <div
+                                  key={`stud-${s.id}`}
+                                  onClick={() => {
+                                    setSelectedManualUser({
+                                      id: s.id,
+                                      name: s.name,
+                                      type: 'student',
+                                      display: `${s.name} (${s.student_id} - Student)`
+                                    });
+                                    setIsManualUserDropdownOpen(false);
+                                  }}
+                                  style={{
+                                    padding: '0.65rem 0.8rem',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem',
+                                    borderBottom: '1px solid rgba(255, 255, 255, 0.02)',
+                                    transition: 'background 0.2s',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.1rem'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+                                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                >
+                                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{s.name}</span>
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ID: {s.student_id} • Dept: {s.department}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {filteredManualStaff.length > 0 && (
+                            <div>
+                              <div style={{ 
+                                padding: '0.4rem 0.8rem', 
+                                background: 'rgba(124, 58, 237, 0.05)', 
+                                color: 'var(--secondary)', 
+                                fontSize: '0.75rem', 
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em'
+                              }}>
+                                Staff Members
+                              </div>
+                              {filteredManualStaff.map(st => (
+                                <div
+                                  key={`stf-${st.id}`}
+                                  onClick={() => {
+                                    setSelectedManualUser({
+                                      id: st.id,
+                                      name: st.name,
+                                      type: 'staff',
+                                      display: `${st.name} (${st.staff_id} - Staff)`
+                                    });
+                                    setIsManualUserDropdownOpen(false);
+                                  }}
+                                  style={{
+                                    padding: '0.65rem 0.8rem',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem',
+                                    borderBottom: '1px solid rgba(255, 255, 255, 0.02)',
+                                    transition: 'background 0.2s',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.1rem'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+                                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                >
+                                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{st.name}</span>
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ID: {st.staff_id} • Dept: {st.department}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="form-group">
