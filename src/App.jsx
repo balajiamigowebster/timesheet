@@ -2679,10 +2679,10 @@ export default function App() {
                   defaultValue={studentModal.mode === 'edit' ? studentModal.data.department : 'Phonics'}
                 >
                   <option value="Phonics">Phonics</option>
-                  <option value="Handwriting">Hindi</option>
-                  <option value="Handwriting">Tamil</option>
-                  <option value="Handwriting">Grammar</option>
-                  <option value="Handwriting">Spoken </option>
+                  <option value="Hindi">Hindi</option>
+                  <option value="Tamil">Tamil</option>
+                  <option value="Grammar">Grammar</option>
+                  <option value="Spoken">Spoken </option>
                   <option value="Handwriting">Handwriting</option>
                 </select>
               </div>
