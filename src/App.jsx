@@ -2063,7 +2063,10 @@ export default function App() {
                   onChange={(e) => setStudentDeptFilter(e.target.value)}
                 >
                   <option value="">All Departments</option>
-                  <option value="Phonics">Phonics</option>
+                  <option value="Hindi">Hindi</option>
+                  <option value="Tamil">Tamil</option>
+                  <option value="Grammar">Grammar</option>
+                  <option value="Spoken">Spoken </option>
                   <option value="Handwriting">Handwriting</option>
                 </select>
               </div>
@@ -2246,9 +2249,11 @@ export default function App() {
                   onChange={(e) => setStaffDeptFilter(e.target.value)}
                 >
                   <option value="">All Departments</option>
-                  <option value="Phonics">Phonics</option>
+                  <option value="Hindi">Hindi</option>
+                  <option value="Tamil">Tamil</option>
+                  <option value="Grammar">Grammar</option>
+                  <option value="Spoken">Spoken </option>
                   <option value="Handwriting">Handwriting</option>
-                  <option value="Administration">Administration</option>
                 </select>
               </div>
 
@@ -2775,9 +2780,11 @@ export default function App() {
                   className="form-select"
                   defaultValue={staffModal.mode === 'edit' ? staffModal.data.department : 'Phonics'}
                 >
-                  <option value="Phonics">Phonics</option>
+                  <option value="Hindi">Hindi</option>
+                  <option value="Tamil">Tamil</option>
+                  <option value="Grammar">Grammar</option>
+                  <option value="Spoken">Spoken </option>
                   <option value="Handwriting">Handwriting</option>
-                  <option value="Administration">Administration</option>
                 </select>
               </div>
 
