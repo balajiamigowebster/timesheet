@@ -1,0 +1,3100 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Users,
+  UserCheck,
+  Clock,
+  BookOpen,
+  Search,
+  Plus,
+  Edit2,
+  Trash2,
+  FileText,
+  CheckCircle,
+  XCircle,
+  ArrowRightLeft,
+  Info,
+  Calendar,
+  LogOut,
+  MapPin,
+  ClipboardList,
+  Menu,
+  X,
+  Upload,
+  Download,
+  Eye,
+  EyeOff
+} from 'lucide-react';
+
+const API_URL = import.meta.env.VITE_API_URL || (() => {
+  const host = window.location.hostname;
+  if (host === 'localhost' || host === '127.0.0.1') {
+    return 'http://localhost:5001/api';
+  }
+  if (host.includes('vercel.app') || host.includes('madhusphonics.com')) {
+    return 'https://amigowebster.in/attendancetimesheet/api';
+  }
+  return window.location.pathname.includes('/attendancetimesheet')
+    ? `${window.location.origin}/attendancetimesheet/api`
+    : `${window.location.origin}/api`;
+})();
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('adminToken') === 'madhusphonics-secret-token-key');
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+  const [selectedStaffIds, setSelectedStaffIds] = useState([]);
+  const [selectedLogIds, setSelectedLogIds] = useState([]);
+  const [studentPage, setStudentPage] = useState(1);
+  const [staffPage, setStaffPage] = useState(1);
+  const [logPage, setLogPage] = useState(1);
+
+  // Student and Staff directory filter states
+  const [studentSearch, setStudentSearch] = useState('');
+  const [studentDeptFilter, setStudentDeptFilter] = useState('');
+  const [studentBatchFilter, setStudentBatchFilter] = useState('');
+
+  const [staffSearch, setStaffSearch] = useState('');
+  const [staffDeptFilter, setStaffDeptFilter] = useState('');
+
+  useEffect(() => {
+    setSelectedStudentIds([]);
+    setSelectedStaffIds([]);
+    setSelectedLogIds([]);
+    setStudentPage(1);
+    setStaffPage(1);
+    setLogPage(1);
+    setStudentSearch('');
+    setStudentDeptFilter('');
+    setStudentBatchFilter('');
+    setStaffSearch('');
+    setStaffDeptFilter('');
+  }, [activeTab]);
+
+  useEffect(() => {
+    setStudentPage(1);
+  }, [studentSearch, studentDeptFilter, studentBatchFilter]);
+
+  useEffect(() => {
+    setStaffPage(1);
+  }, [staffSearch, staffDeptFilter]);
+  const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [students, setStudents] = useState([]);
+  const [staff, setStaff] = useState([]);
+  const [logs, setLogs] = useState([]);
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
+  const [stats, setStats] = useState({
+    counts: { totalStudents: 0, totalStaff: 0, activeStudents: 0, activeStaff: 0 },
+    weeklyData: [],
+    recentLogs: []
+  });
+
+  // Alert/Notification State
+  const [alert, setAlert] = useState(null);
+
+  // Search/Filter States for Log History
+  const [logFilter, setLogFilter] = useState({
+    userType: '',
+    checkedIn: '',
+    startDate: '',
+    endDate: '',
+    search: ''
+  });
+
+  // Modal States
+  const [studentModal, setStudentModal] = useState({ show: false, mode: 'add', data: null });
+  const [staffModal, setStaffModal] = useState({ show: false, mode: 'add', data: null });
+  const [manualLogModal, setManualLogModal] = useState(false);
+  const [manualUserSearch, setManualUserSearch] = useState('');
+  const [selectedManualUser, setSelectedManualUser] = useState(null);
+  const [isManualUserDropdownOpen, setIsManualUserDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    if (!manualLogModal) {
+      setManualUserSearch('');
+      setSelectedManualUser(null);
+      setIsManualUserDropdownOpen(false);
+    }
+  }, [manualLogModal]);
+
+  // Terminal Console States
+  const [terminalUserType, setTerminalUserType] = useState('student');
+  const [terminalSearch, setTerminalSearch] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [terminalPurpose, setTerminalPurpose] = useState('General');
+  const [terminalNotes, setTerminalNotes] = useState('');
+  const [activeCheckInRecord, setActiveCheckInRecord] = useState(null);
+
+  // Phase 2 Geolocation and FaceID states
+  const [location, setLocation] = useState(null);
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+  const [cameraStream, setCameraStream] = useState(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanStatus, setScanStatus] = useState('ready'); // 'ready' | 'scanning' | 'verified'
+  const [lightboxPhoto, setLightboxPhoto] = useState(null);
+
+  const videoRef = useRef(null);
+  const searchRef = useRef(null);
+
+  // Trigger alert helper
+  const showAlert = (message, type = 'success') => {
+    setAlert({ message, type });
+    setTimeout(() => setAlert(null), 4000);
+  };
+
+  // Fetch initial data
+  useEffect(() => {
+    fetchStats();
+    fetchStudents();
+    fetchStaff();
+    fetchLogs();
+  }, []);
+
+  // Phase 2 Camera & Location Helpers
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+      setCameraStream(stream);
+    } catch (err) {
+      console.warn('Camera access error:', err.message);
+    }
+  };
+
+  useEffect(() => {
+    if (cameraStream && videoRef.current) {
+      videoRef.current.srcObject = cameraStream;
+      videoRef.current.play().catch(e => console.warn('Video play error:', e));
+    }
+  }, [cameraStream]);
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+  };
+
+  const fetchLocation = () => {
+    setIsFetchingLocation(true);
+    setLocation(null);
+    if (!navigator.geolocation) {
+      setLocation({ error: 'Geolocation is not supported by this browser' });
+      setIsFetchingLocation(false);
+      return;
+    }
+
+    const successCallback = (position) => {
+      setLocation({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude
+      });
+      setIsFetchingLocation(false);
+    };
+
+    const errorCallback = (error) => {
+      console.warn('High accuracy location failed. Falling back to IP-based location:', error.message);
+      // Fallback to IP-based/low-accuracy location lookup which resolves instantly on desktops without GPS chips
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setLocation({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude
+          });
+          setIsFetchingLocation(false);
+        },
+        (fallbackErr) => {
+          console.warn('Fallback location lookup failed:', fallbackErr.message);
+          setLocation({ error: fallbackErr.message || 'Location timeout expired' });
+          setIsFetchingLocation(false);
+        },
+        { enableHighAccuracy: false, timeout: 10000 }
+      );
+    };
+
+    navigator.geolocation.getCurrentPosition(successCallback, errorCallback, {
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 0
+    });
+  };
+
+  useEffect(() => {
+    if (selectedUser) {
+      // startCamera(); // Commented out to bypass FaceID webcam requests
+      fetchLocation();
+    } else {
+      // stopCamera();
+      setLocation(null);
+      setScanStatus('ready');
+    }
+    // return () => stopCamera();
+  }, [selectedUser]);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    setIsLoggingIn(true);
+
+    try {
+      const res = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: loginUsername, password: loginPassword })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('adminToken', data.token);
+        setIsLoggedIn(true);
+        setLoginUsername('');
+        setLoginPassword('');
+      } else {
+        setLoginError(data.error || 'Invalid credentials');
+      }
+    } catch (err) {
+      setLoginError('Connection error. Please try again.');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const showConfirm = (title, message, onConfirm) => {
+    setConfirmModal({ show: true, title, message, onConfirm });
+  };
+
+  const closeConfirm = () => {
+    setConfirmModal({ show: false, title: '', message: '', onConfirm: null });
+  };
+
+  const handleLogout = () => {
+    showConfirm('Confirm Logout', 'Are you sure you want to log out of the Madhusphonics admin panel?', () => {
+      localStorage.removeItem('adminToken');
+      setIsLoggedIn(false);
+    });
+  };
+
+  // Fetch functions
+  const fetchStats = async () => {
+    try {
+      const res = await fetch(`${API_URL}/timesheet/stats`);
+      if (res.ok) {
+        const data = await res.json();
+        setStats(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch stats:', err);
+    }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      const res = await fetch(`${API_URL}/students`);
+      if (res.ok) {
+        const data = await res.json();
+        setStudents(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch students:', err);
+    }
+  };
+
+  const fetchStaff = async () => {
+    try {
+      const res = await fetch(`${API_URL}/staff`);
+      if (res.ok) {
+        const data = await res.json();
+        setStaff(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch staff:', err);
+    }
+  };
+
+  const fetchLogs = async () => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (logFilter.userType) queryParams.append('user_type', logFilter.userType);
+      if (logFilter.checkedIn) queryParams.append('checked_in', logFilter.checkedIn);
+      if (logFilter.startDate) queryParams.append('start_date', logFilter.startDate);
+      if (logFilter.endDate) queryParams.append('end_date', logFilter.endDate);
+      if (logFilter.search) queryParams.append('search', logFilter.search);
+
+      const res = await fetch(`${API_URL}/timesheet/logs?${queryParams.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setLogs(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch logs:', err);
+    }
+  };
+
+  // Trigger search on filter changes
+  useEffect(() => {
+    fetchLogs();
+    setLogPage(1);
+  }, [logFilter]);
+
+  // Terminal Autocomplete Search
+  useEffect(() => {
+    if (!terminalSearch.trim()) {
+      setSuggestions([]);
+      return;
+    }
+
+    const searchLower = terminalSearch.toLowerCase();
+
+    const matchedStudents = students
+      .filter(s => s.name.toLowerCase().includes(searchLower) || s.student_id.toLowerCase().includes(searchLower))
+      .map(s => ({ ...s, user_type: 'student', idCode: s.student_id }));
+
+    const matchedStaff = staff
+      .filter(st => st.name.toLowerCase().includes(searchLower) || st.staff_id.toLowerCase().includes(searchLower))
+      .map(st => ({ ...st, user_type: 'staff', idCode: st.staff_id }));
+
+    setSuggestions([...matchedStudents, ...matchedStaff].slice(0, 8));
+  }, [terminalSearch, students, staff]);
+
+  const handleSelectUser = (user) => {
+    setTerminalUserType(user.user_type);
+    setSelectedUser(user);
+    setTerminalSearch(user.name);
+    setSuggestions([]);
+  };
+
+  const generateNextStudentID = () => {
+    if (students.length === 0) return 'STU001';
+    let maxId = 0;
+    students.forEach(s => {
+      const match = s.student_id.match(/STU(\d+)/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxId) maxId = num;
+      }
+    });
+    return `STU${String(maxId + 1).padStart(3, '0')}`;
+  };
+
+  const generateNextStaffID = () => {
+    if (staff.length === 0) return 'STF001';
+    let maxId = 0;
+    staff.forEach(s => {
+      const match = s.staff_id.match(/STF(\d+)/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxId) maxId = num;
+      }
+    });
+    return `STF${String(maxId + 1).padStart(3, '0')}`;
+  };
+
+  // Check if selected user is already checked-in
+  useEffect(() => {
+    if (!selectedUser) {
+      setActiveCheckInRecord(null);
+      return;
+    }
+
+    const checkActiveRecord = async () => {
+      try {
+        const idField = terminalUserType === 'student' ? 'student_id' : 'staff_id';
+        const res = await fetch(
+          `${API_URL}/timesheet/logs?user_type=${terminalUserType}&checked_in=true&search=${selectedUser[idField]}`
+        );
+        if (res.ok) {
+          const activeLogs = await res.json();
+          if (activeLogs.length > 0) {
+            setActiveCheckInRecord(activeLogs[0]);
+          } else {
+            setActiveCheckInRecord(null);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    checkActiveRecord();
+  }, [selectedUser, terminalUserType]);
+
+  // Close suggestion dropdown on clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setSuggestions([]);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Form Submission Handlers
+  const handleStudentSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const payload = Object.fromEntries(formData.entries());
+
+    try {
+      let url = `${API_URL}/students`;
+      let method = 'POST';
+
+      if (studentModal.mode === 'edit') {
+        url = `${API_URL}/students/${studentModal.data.id}`;
+        method = 'PUT';
+      }
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        showAlert(studentModal.mode === 'edit' ? 'Student updated successfully' : 'Student registered successfully');
+        setStudentModal({ show: false, mode: 'add', data: null });
+        fetchStudents();
+        fetchStats();
+      } else {
+        showAlert(data.error || 'Operation failed', 'danger');
+      }
+    } catch (err) {
+      showAlert('Server error occurred', 'danger');
+    }
+  };
+
+  const handleStaffSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const payload = Object.fromEntries(formData.entries());
+
+    try {
+      let url = `${API_URL}/staff`;
+      let method = 'POST';
+
+      if (staffModal.mode === 'edit') {
+        url = `${API_URL}/staff/${staffModal.data.id}`;
+        method = 'PUT';
+      }
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        showAlert(staffModal.mode === 'edit' ? 'Staff updated successfully' : 'Staff registered successfully');
+        setStaffModal({ show: false, mode: 'add', data: null });
+        fetchStaff();
+        fetchStats();
+      } else {
+        showAlert(data.error || 'Operation failed', 'danger');
+      }
+    } catch (err) {
+      showAlert('Server error occurred', 'danger');
+    }
+  };
+
+  const getWhatsAppUrl = (actionType, user, rawDateTime) => {
+    if (!user || !user.phone) return null;
+
+    // Clean up phone number
+    let cleanPhone = user.phone.replace(/[\s\-()]/g, '');
+    // Auto-prepend default country code (91 for India) if phone is exactly 10 digits
+    if (cleanPhone.length === 10 && /^\d+$/.test(cleanPhone)) {
+      cleanPhone = '91' + cleanPhone;
+    }
+
+    const { timeStr, dateStr } = formatWhatsAppDateTime(rawDateTime);
+
+    const message = actionType === 'in'
+      ? `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked in at ${timeStr} on ${dateStr} for ${terminalPurpose || 'General'} - Madhu's Phonics & Handwriting....Thank you\n\nFor more info: www.madhusphonics.in.`
+      : `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked out at ${timeStr} on ${dateStr} - Madhu's Phonics & Handwriting....Thank you\n\nFor more info: www.madhusphonics.in.`;
+
+    return `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
+  };
+
+  const executeCheckIn = async (photoBase64) => {
+    try {
+      const res = await fetch(`${API_URL}/timesheet/check-in`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_type: terminalUserType,
+          user_id: selectedUser.id,
+          purpose: terminalPurpose,
+          notes: terminalNotes,
+          latitude: location && !location.error ? location.latitude : null,
+          longitude: location && !location.error ? location.longitude : null,
+          photo: photoBase64
+        })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        showAlert(`Successfully clocked-in ${selectedUser.name}`);
+
+        // Trigger WhatsApp Redirect directly without opening a new tab
+        const url = getWhatsAppUrl('in', selectedUser, data.check_in || new Date().toLocaleTimeString());
+        if (url) {
+          window.location.href = url;
+        }
+
+        setSelectedUser(null);
+        setTerminalSearch('');
+        setTerminalNotes('');
+        setTerminalPurpose('General');
+        fetchStats();
+        fetchLogs();
+      } else {
+        showAlert(data.error || 'Clock-in failed', 'danger');
+      }
+    } catch (err) {
+      showAlert('Server connection error', 'danger');
+    }
+  };
+
+  const executeCheckOut = async (photoBase64) => {
+    try {
+      const payload = activeCheckInRecord
+        ? {
+          entry_id: activeCheckInRecord.id,
+          notes: terminalNotes,
+          latitude: location && !location.error ? location.latitude : null,
+          longitude: location && !location.error ? location.longitude : null,
+          photo: photoBase64
+        }
+        : {
+          user_type: terminalUserType,
+          user_id: selectedUser.id,
+          notes: terminalNotes,
+          latitude: location && !location.error ? location.latitude : null,
+          longitude: location && !location.error ? location.longitude : null,
+          photo: photoBase64
+        };
+
+      const res = await fetch(`${API_URL}/timesheet/check-out`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        showAlert(`Successfully clocked-out ${selectedUser.name}`);
+
+        // Trigger WhatsApp Redirect directly without opening a new tab
+        const url = getWhatsAppUrl('out', selectedUser, data.check_out || new Date().toLocaleTimeString());
+        if (url) {
+          window.location.href = url;
+        }
+
+        setSelectedUser(null);
+        setTerminalSearch('');
+        setTerminalNotes('');
+        fetchStats();
+        fetchLogs();
+      } else {
+        showAlert(data.error || 'Clock-out failed', 'danger');
+      }
+    } catch (err) {
+      showAlert('Server connection error', 'danger');
+    }
+  };
+
+  const handleClockAction = async (actionType) => {
+    // Face ID scanner capture and delays commented out for instant verification
+    /*
+    setIsScanning(true);
+    setScanStatus('scanning');
+
+    let photoBase64 = null;
+    if (videoRef.current && cameraStream) {
+      try {
+        const video = videoRef.current;
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 320;
+        canvas.height = video.videoHeight || 240;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        photoBase64 = canvas.toDataURL('image/jpeg', 0.65);
+      } catch (err) {
+        console.warn('Failed to capture frame:', err);
+      }
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    setScanStatus('verified');
+    await new Promise(resolve => setTimeout(resolve, 400));
+    */
+
+    if (actionType === 'in') {
+      await executeCheckIn(null);
+    } else {
+      await executeCheckOut(null);
+    }
+
+    /*
+    setIsScanning(false);
+    setScanStatus('ready');
+    */
+  };
+
+  const handleManualLogSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const payload = Object.fromEntries(formData.entries());
+
+    // Resolve structural id based on choice
+    const userSelectStr = e.target.manual_user.value; // format: "type:id"
+    if (!userSelectStr) {
+      showAlert('Please select a user', 'danger');
+      return;
+    }
+    const [type, userId] = userSelectStr.split(':');
+    const parsedUserId = parseInt(userId, 10);
+    const list = type === 'student' ? students : staff;
+    const user = list.find(u => u.id === parsedUserId);
+
+    const entryPayload = {
+      user_type: type,
+      user_id: parsedUserId,
+      date: payload.date,
+      check_in: `${payload.date} ${payload.check_in_time}:00`,
+      check_out: `${payload.date} ${payload.check_out_time}:00`,
+      purpose: payload.purpose,
+      notes: payload.notes
+    };
+
+    try {
+      const res = await fetch(`${API_URL}/timesheet/manual-entry`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entryPayload)
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        showAlert('Manual log entry created successfully');
+        setManualLogModal(false);
+
+        // Trigger WhatsApp Redirect directly without opening a new tab
+        if (user && user.phone) {
+          const inParts = formatWhatsAppDateTime(`${payload.date} ${payload.check_in_time}:00`);
+          const outParts = formatWhatsAppDateTime(`${payload.date} ${payload.check_out_time}:00`);
+          const msg = `*From Madhusphonics*\n\nHello ${user.name}, a manual timesheet log has been created for you on ${inParts.dateStr}. Clock-In: ${inParts.timeStr}, Clock-Out: ${outParts.timeStr} - Madhu's Phonics & Handwriting....Thank you\n\nFor more info: www.madhusphonics.in.`;
+          let cleanPhone = user.phone.replace(/[\s\-()]/g, '');
+          if (cleanPhone.length === 10 && /^\d+$/.test(cleanPhone)) {
+            cleanPhone = '91' + cleanPhone;
+          }
+          window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
+        }
+
+        fetchStats();
+        fetchLogs();
+      } else {
+        showAlert(data.error || 'Failed to create log', 'danger');
+      }
+    } catch (err) {
+      showAlert('Server connection error', 'danger');
+    }
+  };
+
+  const handleDeleteStudent = (id, name) => {
+    showConfirm(
+      'Delete Student',
+      `Are you sure you want to delete student "${name}"? All their clock-in logs will also be permanently deleted.`,
+      async () => {
+        try {
+          const res = await fetch(`${API_URL}/students/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            showAlert(`Deleted student "${name}"`);
+            fetchStudents();
+            fetchStats();
+            fetchLogs();
+          } else {
+            const data = await res.json();
+            showAlert(data.error || 'Failed to delete', 'danger');
+          }
+        } catch (err) {
+          showAlert('Server error', 'danger');
+        }
+      }
+    );
+  };
+
+  const handleDeleteStaff = (id, name) => {
+    showConfirm(
+      'Delete Staff Member',
+      `Are you sure you want to delete staff member "${name}"? All their clock-in logs will also be permanently deleted.`,
+      async () => {
+        try {
+          const res = await fetch(`${API_URL}/staff/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            showAlert(`Deleted staff member "${name}"`);
+            fetchStaff();
+            fetchStats();
+            fetchLogs();
+          } else {
+            const data = await res.json();
+            showAlert(data.error || 'Failed to delete', 'danger');
+          }
+        } catch (err) {
+          showAlert('Server error', 'danger');
+        }
+      }
+    );
+  };
+
+  const handleDeleteLog = (id) => {
+    showConfirm(
+      'Delete Log Entry',
+      'Are you sure you want to permanently delete this timesheet log entry?',
+      async () => {
+        try {
+          const res = await fetch(`${API_URL}/timesheet/logs/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            showAlert('Timesheet entry deleted successfully');
+            fetchLogs();
+            fetchStats();
+          } else {
+            const data = await res.json();
+            showAlert(data.error || 'Failed to delete log', 'danger');
+          }
+        } catch (err) {
+          showAlert('Server error', 'danger');
+        }
+      }
+    );
+  };
+
+  const handleBulkDeleteStudents = () => {
+    if (selectedStudentIds.length === 0) return;
+    showConfirm(
+      'Bulk Delete Students',
+      `Are you sure you want to delete the ${selectedStudentIds.length} selected student(s)? All their clock-in logs will also be permanently deleted.`,
+      async () => {
+        try {
+          const res = await fetch(`${API_URL}/students/bulk-delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: selectedStudentIds })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            showAlert(data.message || 'Students deleted successfully');
+            setSelectedStudentIds([]);
+            fetchStudents();
+            fetchStats();
+            fetchLogs();
+          } else {
+            showAlert(data.error || 'Failed to delete students', 'danger');
+          }
+        } catch (err) {
+          showAlert('Server connection error', 'danger');
+        }
+      }
+    );
+  };
+
+  const handleBulkDeleteStaff = () => {
+    if (selectedStaffIds.length === 0) return;
+    showConfirm(
+      'Bulk Delete Staff',
+      `Are you sure you want to delete the ${selectedStaffIds.length} selected staff member(s)? All their logs will be permanently deleted.`,
+      async () => {
+        try {
+          const res = await fetch(`${API_URL}/staff/bulk-delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: selectedStaffIds })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            showAlert(data.message || 'Staff deleted successfully');
+            setSelectedStaffIds([]);
+            fetchStaff();
+            fetchStats();
+            fetchLogs();
+          } else {
+            showAlert(data.error || 'Failed to delete staff members', 'danger');
+          }
+        } catch (err) {
+          showAlert('Server connection error', 'danger');
+        }
+      }
+    );
+  };
+
+  const handleBulkDeleteLogs = () => {
+    if (selectedLogIds.length === 0) return;
+    showConfirm(
+      'Bulk Delete Logs',
+      `Are you sure you want to delete the ${selectedLogIds.length} selected timesheet entry/entries?`,
+      async () => {
+        try {
+          const res = await fetch(`${API_URL}/timesheet/logs/bulk-delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: selectedLogIds })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            showAlert(data.message || 'Logs deleted successfully');
+            setSelectedLogIds([]);
+            fetchLogs();
+            fetchStats();
+          } else {
+            showAlert(data.error || 'Failed to delete log entries', 'danger');
+          }
+        } catch (err) {
+          showAlert('Server connection error', 'danger');
+        }
+      }
+    );
+  };
+
+  const handleTableCheckOut = async (entryId, name) => {
+    try {
+      const res = await fetch(`${API_URL}/timesheet/check-out`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entry_id: entryId })
+      });
+      if (res.ok) {
+        showAlert(`Clocked-out ${name}`);
+        fetchLogs();
+        fetchStats();
+      } else {
+        const data = await res.json();
+        showAlert(data.error || 'Checkout failed', 'danger');
+      }
+    } catch (err) {
+      showAlert('Server connection error', 'danger');
+    }
+  };
+
+  // CSV Export Handler
+  const handleExportCSV = (type) => {
+    if (type === 'student') {
+      const fields = [
+        { label: 'Student ID', key: 'student_id' },
+        { label: 'Name', key: 'name' },
+        { label: 'Phone', key: 'phone' },
+        { label: 'Department', key: 'department' },
+        { label: 'Batch', key: 'batch' }
+      ];
+      exportToCSV(students, 'students_details.csv', fields);
+    } else {
+      const fields = [
+        { label: 'Staff ID', key: 'staff_id' },
+        { label: 'Name', key: 'name' },
+        { label: 'Phone', key: 'phone' },
+        { label: 'Department', key: 'department' },
+        { label: 'Designation', key: 'designation' }
+      ];
+      exportToCSV(staff, 'staff_details.csv', fields);
+    }
+  };
+
+  const exportToCSV = (data, filename, fields) => {
+    const csvHeaders = fields.map(f => f.label).join(',');
+    const csvRows = data.map(row =>
+      fields.map(f => {
+        const val = row[f.key] || '';
+        return `"${String(val).replace(/"/g, '""')}"`;
+      }).join(',')
+    );
+    // Add UTF-8 BOM for Microsoft Excel compliance
+    const csvContent = '\uFEFF' + [csvHeaders, ...csvRows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showAlert(`Successfully exported records to Excel CSV`);
+  };
+
+  // CSV Import Handler
+  const handleImportCSV = (event, type) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target.result;
+      const parsedData = parseCSV(text, type);
+
+      if (parsedData.length === 0) {
+        showAlert('No valid data found in CSV file', 'danger');
+        return;
+      }
+
+      let successCount = 0;
+      let failCount = 0;
+      let errorMsgs = [];
+
+      showAlert(`Starting bulk import of ${parsedData.length} records...`);
+
+      for (const item of parsedData) {
+        const idField = type === 'student' ? 'student_id' : 'staff_id';
+        if (!item[idField] || !item.name || !item.phone || !item.department) {
+          failCount++;
+          errorMsgs.push(`Row missing required fields (ID, Name, Phone, Dept)`);
+          continue;
+        }
+
+        try {
+          const res = await fetch(`${API_URL}/${type}s`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item)
+          });
+          const data = await res.json();
+          if (res.ok) {
+            successCount++;
+          } else {
+            failCount++;
+            errorMsgs.push(`${item[idField]}: ${data.error || 'Import failed'}`);
+          }
+        } catch (err) {
+          failCount++;
+          errorMsgs.push(`${item[idField]}: Network error`);
+        }
+      }
+
+      if (type === 'student') {
+        fetchStudents();
+      } else {
+        fetchStaff();
+      }
+      fetchStats();
+
+      if (successCount > 0) {
+        showAlert(`Successfully imported ${successCount} ${type}s! ${failCount > 0 ? `${failCount} failed.` : ''}`);
+      } else if (failCount > 0) {
+        showAlert(`Failed to import records. Errors: ${errorMsgs.slice(0, 3).join(', ')}`, 'danger');
+      }
+
+      event.target.value = '';
+    };
+
+    reader.readAsText(file);
+  };
+
+  const handleExportLogsCSV = () => {
+    const fields = [
+      { label: 'Type', key: 'user_type' },
+      { label: 'ID Code', key: 'id_code' },
+      { label: 'Name', key: 'name' },
+      { label: 'Department', key: 'department' },
+      { label: 'Date', key: 'date' },
+      { label: 'Clock In', key: 'check_in' },
+      { label: 'Clock Out', key: 'check_out' },
+      { label: 'Purpose', key: 'purpose' },
+      { label: 'Notes', key: 'notes' }
+    ];
+    exportToCSV(logs, 'timesheet_logs.csv', fields);
+  };
+
+  const handleImportLogsCSV = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target.result;
+      const parsedData = parseLogsCSV(text);
+
+      if (parsedData.length === 0) {
+        showAlert('No valid log records found in CSV file', 'danger');
+        return;
+      }
+
+      let successCount = 0;
+      let failCount = 0;
+      let errorMsgs = [];
+
+      showAlert(`Starting bulk import of ${parsedData.length} logs...`);
+
+      for (const item of parsedData) {
+        // Find user_id from id_code
+        let resolvedUserId = null;
+        if (item.user_type === 'student') {
+          const matched = students.find(s => s.student_id.toLowerCase() === item.id_code.toLowerCase());
+          if (matched) resolvedUserId = matched.id;
+        } else if (item.user_type === 'staff') {
+          const matched = staff.find(s => s.staff_id.toLowerCase() === item.id_code.toLowerCase());
+          if (matched) resolvedUserId = matched.id;
+        }
+
+        if (!resolvedUserId) {
+          failCount++;
+          errorMsgs.push(`User not found for ID Code: ${item.id_code}`);
+          continue;
+        }
+
+        const payload = {
+          user_type: item.user_type,
+          user_id: resolvedUserId,
+          date: item.date,
+          check_in: item.check_in,
+          check_out: item.check_out || null,
+          purpose: item.purpose || 'General',
+          notes: item.notes || ''
+        };
+
+        try {
+          const res = await fetch(`${API_URL}/timesheet/manual-entry`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (res.ok) {
+            successCount++;
+          } else {
+            failCount++;
+            errorMsgs.push(`${item.id_code}: ${data.error || 'Import failed'}`);
+          }
+        } catch (err) {
+          failCount++;
+          errorMsgs.push(`${item.id_code}: Network error`);
+        }
+      }
+
+      fetchLogs();
+      fetchStats();
+
+      if (successCount > 0) {
+        showAlert(`Successfully imported ${successCount} timesheet logs! ${failCount > 0 ? `${failCount} failed.` : ''}`);
+      } else if (failCount > 0) {
+        showAlert(`Failed to import logs. Errors: ${errorMsgs.slice(0, 3).join(', ')}`, 'danger');
+      }
+
+      event.target.value = '';
+    };
+
+    reader.readAsText(file);
+  };
+
+  const parseLogsCSV = (text) => {
+    const lines = text.split(/\r?\n/);
+    if (lines.length === 0) return [];
+
+    const firstLine = lines[0];
+    if (!firstLine) return [];
+
+    const headers = firstLine.split(',').map(h =>
+      h.trim().replace(/^["']|["']$/g, '').toLowerCase()
+    );
+
+    const results = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      const matches = [];
+      let current = '';
+      let inQuotes = false;
+      for (let charIndex = 0; charIndex < line.length; charIndex++) {
+        const char = line[charIndex];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          matches.push(current.trim().replace(/^["']|["']$/g, ''));
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      matches.push(current.trim().replace(/^["']|["']$/g, ''));
+
+      const entry = {};
+      headers.forEach((header, index) => {
+        const val = matches[index] || '';
+
+        // Map headers loosely
+        if (header.includes('type')) {
+          entry.user_type = val.toLowerCase().includes('staff') ? 'staff' : 'student';
+        } else if (header.includes('id') || header.includes('code')) {
+          entry.id_code = val;
+        } else if (header.includes('date')) {
+          entry.date = val;
+        } else if (header.includes('in') || header.includes('start')) {
+          entry.check_in = val;
+        } else if (header.includes('out') || header.includes('end')) {
+          entry.check_out = val;
+        } else if (header.includes('purpose')) {
+          entry.purpose = val;
+        } else if (header.includes('note')) {
+          entry.notes = val;
+        }
+      });
+
+      if (entry.user_type && entry.id_code && entry.date && entry.check_in) {
+        results.push(entry);
+      }
+    }
+    return results;
+  };
+
+  const parseCSV = (text, type) => {
+    const lines = text.split(/\r?\n/);
+    if (lines.length === 0) return [];
+
+    const firstLine = lines[0];
+    if (!firstLine) return [];
+
+    const headers = firstLine.split(',').map(h =>
+      h.trim().replace(/^["']|["']$/g, '').toLowerCase()
+    );
+
+    const results = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      const matches = [];
+      let current = '';
+      let inQuotes = false;
+      for (let charIndex = 0; charIndex < line.length; charIndex++) {
+        const char = line[charIndex];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          matches.push(current.trim().replace(/^["']|["']$/g, ''));
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      matches.push(current.trim().replace(/^["']|["']$/g, ''));
+
+      const entry = {};
+      headers.forEach((header, index) => {
+        let key = header;
+        if (header.includes('id') || header.includes('code') || header.includes('number')) {
+          key = type === 'student' ? 'student_id' : 'staff_id';
+        } else if (header.includes('name')) {
+          key = 'name';
+        } else if (header.includes('phone') || header.includes('contact') || header.includes('mobile')) {
+          key = 'phone';
+        } else if (header.includes('dept') || header.includes('department')) {
+          key = 'department';
+        } else if (header.includes('batch') || header.includes('year')) {
+          key = 'batch';
+        } else if (header.includes('designation') || header.includes('role') || header.includes('title')) {
+          key = 'designation';
+        }
+
+        entry[key] = matches[index] || '';
+      });
+
+      results.push(entry);
+    }
+    return results;
+  };
+
+  // Date/Time formatting helpers
+  const formatWhatsAppDateTime = (dateStr) => {
+    const d = dateStr ? new Date(dateStr) : new Date();
+
+    // Time formatting: 6.00pm
+    let hours = d.getHours();
+    const minutes = d.getMinutes();
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 0 should be 12
+    const minStr = minutes < 10 ? '0' + minutes : minutes;
+    const timeFormatted = `${hours}.${minStr}${ampm}`;
+
+    // Date formatting: D/M/YYYY
+    const day = d.getDate();
+    const month = d.getMonth() + 1;
+    const year = d.getFullYear();
+    const dateFormatted = `${day}/${month}/${year}`;
+
+    return { timeStr: timeFormatted, dateStr: dateFormatted };
+  };
+
+  const formatDateTime = (dateTimeStr) => {
+    if (!dateTimeStr) return '-';
+    const date = new Date(dateTimeStr);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' (' + date.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ')';
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString(undefined, {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  if (!isLoggedIn) {
+    return (
+      <div className="login-wrapper" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        background: 'radial-gradient(circle at top right, rgba(96, 91, 229, 0.15), rgba(255, 73, 121, 0.15), #f8fafc)',
+        fontFamily: 'Inter, sans-serif',
+        padding: '1.5rem',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Floating background school elements */}
+        <div className="floating-icon" style={{ top: '15%', left: '10%', animation: 'float 6s ease-in-out infinite' }}>
+          <Edit2 size={48} />
+        </div>
+        <div className="floating-icon" style={{ bottom: '20%', left: '15%', animation: 'float-reverse 8s ease-in-out infinite' }}>
+          <BookOpen size={56} />
+        </div>
+        <div className="floating-icon" style={{ top: '25%', right: '12%', animation: 'float 7s ease-in-out infinite' }}>
+          <Users size={52} />
+        </div>
+        <div className="floating-icon" style={{ bottom: '15%', right: '15%', animation: 'float-reverse 9s ease-in-out infinite' }}>
+          <Calendar size={48} />
+        </div>
+
+        {/* Dual-Pane container */}
+        <div className="login-container-wrap">
+          {/* Left illustration pane */}
+          <div className="login-left-pane">
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '0.75rem', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>Unlock Writing Potential</h2>
+            <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.95)', lineHeight: '1.5', maxWidth: '320px', margin: '0 auto' }}>
+              Chennai's premier training enhancement program for Phonics & Handwriting.
+            </p>
+          </div>
+
+          {/* Right login form pane */}
+          <div className="login-right-pane">
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+              {/* Graduate Cap Logo Decoration */}
+              <div style={{
+                position: 'relative',
+                width: '90px',
+                height: '90px',
+                margin: '0 auto 1.25rem'
+              }}>
+                <svg
+                  viewBox="0 0 100 60"
+                  style={{
+                    position: 'absolute',
+                    top: '-24px',
+                    left: '10px',
+                    width: '70px',
+                    height: '42px',
+                    zIndex: 2,
+                    filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.15))'
+                  }}
+                >
+                  <polygon points="50,5 95,22 50,39 5,22" fill="#605BE5" />
+                  <path d="M25,28 L25,38 C25,45 75,45 75,38 L75,28" fill="#4D48CC" />
+                  <path d="M50,22 L15,32 L15,45" fill="none" stroke="#FFD700" strokeWidth="2.5" strokeLinecap="round" />
+                  <circle cx="15" cy="45" r="3" fill="#FFD700" />
+                </svg>
+
+                <div style={{
+                  position: 'relative',
+                  width: '90px',
+                  height: '90px',
+                  borderRadius: '50%',
+                  background: '#ffffff',
+                  border: '3px solid #FF4979',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 8px 24px rgba(255, 73, 121, 0.2)',
+                  overflow: 'hidden',
+                  zIndex: 1
+                }}>
+                  <img
+                    src="https://madhusphonics.com/wp-content/uploads/2024/01/logo-2.png"
+                    alt="Madhusphonics Logo"
+                    style={{ width: '90%', height: '90%', objectFit: 'contain' }}
+                  />
+                </div>
+              </div>
+
+              <h1 style={{
+                fontSize: '1.6rem',
+                fontWeight: 800,
+                background: 'linear-gradient(135deg, #FF4979, #605BE5)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                letterSpacing: '-0.5px',
+                marginBottom: '0.35rem'
+              }}>Madhusphonics</h1>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Timesheet Admin Console</p>
+            </div>
+
+            {loginError && (
+              <div style={{
+                padding: '0.75rem 1rem',
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                borderRadius: 'var(--radius-md)',
+                color: '#f87171',
+                fontSize: '0.85rem',
+                marginBottom: '1.25rem',
+                textAlign: 'center'
+              }}>
+                {loginError}
+              </div>
+            )}
+
+            <form onSubmit={handleLogin}>
+              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Admin Username</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Enter username"
+                  required
+                  value={loginUsername}
+                  onChange={(e) => setLoginUsername(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '1.75rem' }}>
+                <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Admin Password</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showLoginPassword ? "text" : "password"}
+                    className="form-input"
+                    placeholder="Enter password"
+                    required
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    style={{ width: '100%', boxSizing: 'border-box', paddingRight: '2.5rem' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'var(--text-secondary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '4px'
+                    }}
+                  >
+                    {showLoginPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={isLoggingIn}
+                style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+              >
+                {isLoggingIn ? 'Verifying credentials...' : 'Login to Console'}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const ITEMS_PER_PAGE = 10;
+
+  // Client-side search and filtering for students
+  const filteredStudents = students.filter(student => {
+    const matchesSearch =
+      student.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
+      student.student_id.toLowerCase().includes(studentSearch.toLowerCase()) ||
+      (student.phone && student.phone.replace(/[\s\-()]/g, '').includes(studentSearch.replace(/[\s\-()]/g, '')));
+
+    const matchesDept = !studentDeptFilter || student.department === studentDeptFilter;
+    const matchesBatch = !studentBatchFilter || student.batch === studentBatchFilter;
+
+    return matchesSearch && matchesDept && matchesBatch;
+  });
+
+  // Client-side search and filtering for staff
+  const filteredStaff = staff.filter(member => {
+    const matchesSearch =
+      member.name.toLowerCase().includes(staffSearch.toLowerCase()) ||
+      member.staff_id.toLowerCase().includes(staffSearch.toLowerCase()) ||
+      (member.phone && member.phone.replace(/[\s\-()]/g, '').includes(staffSearch.replace(/[\s\-()]/g, '')));
+
+    const matchesDept = !staffDeptFilter || member.department === staffDeptFilter;
+
+    return matchesSearch && matchesDept;
+  });
+
+  // Combined search and filtering for the manual log user selection dropdown
+  const filteredManualStudents = students.filter(student => {
+    const term = manualUserSearch.toLowerCase().trim();
+    if (!term) return true;
+    return (
+      student.name.toLowerCase().includes(term) ||
+      student.student_id.toLowerCase().includes(term) ||
+      (student.phone && student.phone.replace(/[\s\-()]/g, '').includes(term.replace(/[\s\-()]/g, '')))
+    );
+  });
+
+  const filteredManualStaff = staff.filter(member => {
+    const term = manualUserSearch.toLowerCase().trim();
+    if (!term) return true;
+    return (
+      member.name.toLowerCase().includes(term) ||
+      member.staff_id.toLowerCase().includes(term) ||
+      (member.phone && member.phone.replace(/[\s\-()]/g, '').includes(term.replace(/[\s\-()]/g, '')))
+    );
+  });
+
+  // Pagination slice calculations
+  const studentStartIndex = (studentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedStudents = filteredStudents.slice(studentStartIndex, studentStartIndex + ITEMS_PER_PAGE);
+
+  const staffStartIndex = (staffPage - 1) * ITEMS_PER_PAGE;
+  const paginatedStaff = filteredStaff.slice(staffStartIndex, staffStartIndex + ITEMS_PER_PAGE);
+
+  const logStartIndex = (logPage - 1) * ITEMS_PER_PAGE;
+  const paginatedLogs = logs.slice(logStartIndex, logStartIndex + ITEMS_PER_PAGE);
+
+  // Pagination component helper
+  const renderPagination = (currentPage, totalItems, onPageChange) => {
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    if (totalPages <= 1) return null;
+
+    // Show max 5 page buttons
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    if (endPage - startPage < 4) {
+      startPage = Math.max(1, endPage - 4);
+    }
+
+    const pages = [];
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    return (
+      <div className="pagination-container" style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '1rem 1.5rem',
+        borderTop: '1px solid var(--card-border)',
+        flexWrap: 'wrap',
+        gap: '1rem',
+        background: 'rgba(255, 255, 255, 0.01)'
+      }}>
+        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+          Showing {totalItems === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(totalItems, currentPage * ITEMS_PER_PAGE)} of {totalItems} entries
+        </span>
+        <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="btn btn-outline"
+            style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', width: 'auto', opacity: currentPage === 1 ? 0.5 : 1 }}
+            disabled={currentPage === 1}
+            onClick={() => onPageChange(currentPage - 1)}
+          >
+            Previous
+          </button>
+
+          {pages.map(page => (
+            <button
+              type="button"
+              key={page}
+              className={`btn ${page === currentPage ? 'btn-primary' : 'btn-outline'}`}
+              style={{
+                padding: '0',
+                fontSize: '0.8rem',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: page === currentPage ? 'var(--primary)' : 'transparent',
+                color: page === currentPage ? '#fff' : 'var(--text-primary)',
+                borderColor: page === currentPage ? 'var(--primary)' : 'var(--card-border)',
+                fontWeight: page === currentPage ? '700' : 'normal'
+              }}
+              onClick={() => onPageChange(page)}
+            >
+              {page}
+            </button>
+          ))}
+
+          <button
+            type="button"
+            className="btn btn-outline"
+            style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', width: 'auto', opacity: currentPage === totalPages ? 0.5 : 1 }}
+            disabled={currentPage === totalPages}
+            onClick={() => onPageChange(currentPage + 1)}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="app-container">
+      {/* Mobile Header Bar */}
+      <div className="mobile-header">
+        <button className="menu-toggle-btn" onClick={() => setIsMobileMenuOpen(true)}>
+          <Menu size={22} />
+        </button>
+        <div className="mobile-logo-text">TIMESHEET PORTAL</div>
+        <div style={{ width: '22px' }}></div> {/* Spacer */}
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      <div
+        className={`mobile-sidebar-overlay ${isMobileMenuOpen ? 'open' : ''}`}
+        onClick={() => setIsMobileMenuOpen(false)}
+      ></div>
+
+      {/* Side Navigation */}
+      <aside className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
+        <div className="logo-container">
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            background: '#ffffff',
+            border: '2px solid var(--primary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            boxShadow: '0 4px 12px rgba(255, 73, 121, 0.15)',
+            flexShrink: 0
+          }}>
+            <img
+              src="https://madhusphonics.com/wp-content/uploads/2024/01/logo-2.png"
+              alt="Logo"
+              style={{ width: '90%', height: '90%', objectFit: 'contain' }}
+            />
+          </div>
+          <span className="logo-text">TIMESHEET</span>
+          <button className="mobile-close-sidebar-btn" onClick={() => setIsMobileMenuOpen(false)}>
+            <X size={18} />
+          </button>
+        </div>
+
+        <nav className="nav-links">
+          <div
+            onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }}
+            className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+          >
+            <Clock size={18} />
+            <span>Dashboard</span>
+          </div>
+          <div
+            onClick={() => { setActiveTab('terminal'); setIsMobileMenuOpen(false); }}
+            className={`nav-item ${activeTab === 'terminal' ? 'active' : ''}`}
+          >
+            <ArrowRightLeft size={18} />
+            <span>Clock Terminal</span>
+          </div>
+          <div
+            onClick={() => { setActiveTab('students'); setIsMobileMenuOpen(false); }}
+            className={`nav-item ${activeTab === 'students' ? 'active' : ''}`}
+          >
+            <Users size={18} />
+            <span>Students Directory</span>
+          </div>
+          <div
+            onClick={() => { setActiveTab('staff'); setIsMobileMenuOpen(false); }}
+            className={`nav-item ${activeTab === 'staff' ? 'active' : ''}`}
+          >
+            <UserCheck size={18} />
+            <span>Staff Directory</span>
+          </div>
+          <div
+            onClick={() => { setActiveTab('logs'); setIsMobileMenuOpen(false); }}
+            className={`nav-item ${activeTab === 'logs' ? 'active' : ''}`}
+          >
+            <FileText size={18} />
+            <span>Timesheet Logs</span>
+          </div>
+          <div
+            onClick={handleLogout}
+            className="nav-item"
+            style={{ marginTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem', color: '#f87171' }}
+          >
+            <LogOut size={18} />
+            <span>Logout</span>
+          </div>
+        </nav>
+
+        <div className="sidebar-footer">
+          <p>Timesheet Admin Console</p>
+          <p>© 2026 Academic Portal</p>
+        </div>
+      </aside>
+
+      {/* Main Panel Content */}
+      <main className="main-content">
+
+        {/* Global Floating Alert Notification */}
+        {alert && (
+          <div className={`alert alert-${alert.type}`}>
+            <Info size={18} />
+            <span>{alert.message}</span>
+          </div>
+        )}
+
+        {/* 1. DASHBOARD TAB */}
+        {activeTab === 'dashboard' && (
+          <div>
+            <div className="header-container">
+              <div className="header-title">
+                <h1>Timesheet Dashboard</h1>
+                <p>Monitor real-time student and staff clock-ins and overview statistics.</p>
+              </div>
+            </div>
+
+            {/* Dashboard Quick Stats */}
+            <div className="stats-grid">
+              <div className="card stat-card">
+                <div>
+                  <div className="stat-label">Total Students</div>
+                  <div className="stat-value">{stats.counts.totalStudents}</div>
+                </div>
+                <div className="stat-icon blue">
+                  <Users size={24} />
+                </div>
+              </div>
+              <div className="card stat-card">
+                <div>
+                  <div className="stat-label">Clocked-In Students</div>
+                  <div className="stat-value">{stats.counts.activeStudents}</div>
+                </div>
+                <div className="stat-icon green">
+                  <UserCheck size={24} />
+                </div>
+              </div>
+              <div className="card stat-card">
+                <div>
+                  <div className="stat-label">Total Staff</div>
+                  <div className="stat-value">{stats.counts.totalStaff}</div>
+                </div>
+                <div className="stat-icon cyan">
+                  <Users size={24} />
+                </div>
+              </div>
+              <div className="card stat-card">
+                <div>
+                  <div className="stat-label">Clocked-In Staff</div>
+                  <div className="stat-value">{stats.counts.activeStaff}</div>
+                </div>
+                <div className="stat-icon amber">
+                  <UserCheck size={24} />
+                </div>
+              </div>
+            </div>
+            {/* Recent Activity Log Feed */}
+            <div style={{ marginTop: '2rem' }}>
+              <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Clock size={16} /> Recent Entry/Exit Feed
+                </h2>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1 }}>
+                  {stats.recentLogs && stats.recentLogs.length > 0 ? (
+                    stats.recentLogs.map(log => (
+                      <div
+                        key={log.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '0.75rem',
+                          paddingBottom: '0.75rem',
+                          borderBottom: '1px solid rgba(255,255,255,0.04)',
+                        }}
+                      >
+                        <div style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          background: log.check_out ? 'rgba(148,163,184,0.1)' : 'var(--success-glow)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: log.check_out ? 'var(--text-secondary)' : 'var(--success)'
+                        }}>
+                          {log.check_out ? <LogOut size={14} /> : <UserCheck size={14} />}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ fontWeight: 600, fontSize: '0.85rem' }} className="truncate">{log.name}</span>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{log.id_code}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{log.purpose}</span>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 500, color: log.check_out ? 'var(--text-muted)' : 'var(--success)' }}>
+                              {log.check_out ? 'Out' : 'In'}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                            {formatDateTime(log.check_out || log.check_in)}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--text-muted)', margin: 'auto' }}>
+                      No recent activities recorded.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* 1.5. CLOCK TERMINAL TAB */}
+        {activeTab === 'terminal' && (
+          <div>
+            <div className="header-container">
+              <div className="header-title">
+                <h1>Clock In/Out Terminal</h1>
+                <p>Verify FaceID and resolve Geolocation details to record timesheet entries in real-time.</p>
+              </div>
+            </div>
+
+            <div style={{ maxWidth: '650px', margin: '0 auto' }}>
+              <div className="card">
+                <div className="terminal-header">
+                  <div className="terminal-title">
+                    <div className="indicator-dot"></div>
+                    <span>Live Clock-In & Clock-Out Terminal</span>
+                  </div>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Console Online</span>
+                </div>
+
+                <div ref={searchRef} style={{ position: 'relative', marginBottom: '1.25rem' }}>
+                  <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Search student or staff by Name or ID..."
+                    style={{ paddingLeft: '2.75rem' }}
+                    value={terminalSearch}
+                    onChange={(e) => setTerminalSearch(e.target.value)}
+                  />
+
+                  {suggestions.length > 0 && (
+                    <div className="autocomplete-results">
+                      {suggestions.map(user => {
+                        const isStudent = user.user_type === 'student';
+                        return (
+                          <div
+                            key={`${user.user_type}-${user.id}`}
+                            className="autocomplete-item"
+                            onClick={() => handleSelectUser(user)}
+                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                          >
+                            <div>
+                              <span style={{ fontWeight: 600, fontSize: '0.85rem' }} className="truncate">{user.name}</span>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>({user.idCode})</span>
+                            </div>
+                            <span className={`badge ${isStudent ? 'badge-student' : 'badge-staff'}`} style={{ fontSize: '0.65rem', padding: '0.15rem 0.45rem' }}>
+                              {isStudent ? 'Student' : 'Staff'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {selectedUser ? (
+                  <form onSubmit={(e) => { e.preventDefault(); handleClockAction(activeCheckInRecord ? 'out' : 'in'); }}>
+
+                    <div className="card" style={{ background: 'var(--bg-secondary)', marginBottom: '1.5rem', borderColor: 'var(--card-border)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>{selectedUser.name}</h3>
+                          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                            {terminalUserType === 'student' ? `ID: ${selectedUser.student_id} | Batch: ${selectedUser.batch}` : `ID: ${selectedUser.staff_id} | Designation: ${selectedUser.designation}`}
+                          </p>
+                          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Department: {selectedUser.department}</p>
+                          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Phone: {selectedUser.phone}</p>
+                        </div>
+                        <div>
+                          {activeCheckInRecord ? (
+                            <span className="badge badge-active">
+                              <Info size={12} /> Clocked In
+                            </span>
+                          ) : (
+                            <span className="badge badge-completed">
+                              <XCircle size={12} /> Clocked Out
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {activeCheckInRecord && (
+                        <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: '0.8rem', color: 'var(--success)' }}>
+                          Clocked-in on: {formatDateTime(activeCheckInRecord.check_in)}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Face ID camera preview commented out
+                  <div className="camera-preview-container">
+                    {cameraStream ? (
+                      <video 
+                        ref={videoRef} 
+                        className="camera-video" 
+                        autoPlay 
+                        playsInline 
+                        muted 
+                      />
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                        <Clock size={24} style={{ marginBottom: '0.5rem', color: 'var(--warning)', animation: 'pulse 1.5s infinite alternate' }} />
+                        <span>Requesting Camera Feed for Verification...</span>
+                      </div>
+                    )}
+                    {cameraStream && (
+                      <div className="scanner-overlay">
+                        <div className="scanner-target tl"></div>
+                        <div className="scanner-target tr"></div>
+                        <div className="scanner-target bl"></div>
+                        <div className="scanner-target br"></div>
+                        
+                        {scanStatus === 'scanning' && (
+                          <div className="scanning-status-text verifying">
+                            <span className="indicator-dot" style={{ backgroundColor: 'var(--warning)', boxShadow: '0 0 8px var(--warning)' }}></span>
+                            Verifying Face ID...
+                          </div>
+                        )}
+                        {scanStatus === 'verified' && (
+                          <div className="scanning-status-text verified">
+                            <CheckCircle size={14} /> Face ID Verified
+                          </div>
+                        )}
+                        {scanStatus === 'ready' && (
+                          <div className="scanning-status-text">
+                            FaceID Scanner Active
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  */}
+
+                    <div className="location-status-badge">
+                      <MapPin size={16} style={{ color: location && !location.error ? 'var(--success)' : 'var(--text-muted)' }} />
+                      {isFetchingLocation ? (
+                        <span>Resolving GPS Geolocation...</span>
+                      ) : location ? (
+                        location.error ? (
+                          <span style={{ color: 'var(--danger)' }}>Location Error: {location.error}</span>
+                        ) : (
+                          <span>Location Locked: {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}</span>
+                        )
+                      ) : (
+                        <span>Awaiting coordinates...</span>
+                      )}
+                    </div>
+
+                    {!activeCheckInRecord && (
+                      <div className="form-group">
+                        <label className="form-label">Purpose of Entry</label>
+                        <select
+                          className="form-select"
+                          value={terminalPurpose}
+                          onChange={(e) => setTerminalPurpose(e.target.value)}
+                        >
+                          <option value="General">General / Routine Entry</option>
+                          <option value="Lecture / Class">Lecture / Class</option>
+                          <option value="Lab Work">Laboratory / Practical Work</option>
+                          <option value="Library">Library Study</option>
+                          <option value="Meeting / Admin">Meeting / Administrative Work</option>
+                          <option value="Sports / Event">Sports / Event</option>
+                        </select>
+                      </div>
+                    )}
+
+                    <div className="form-group">
+                      <label className="form-label">{activeCheckInRecord ? 'Clock-out Notes / Remarks (Optional)' : 'Clock-in Notes / Remarks (Optional)'}</label>
+                      <textarea
+                        className="form-textarea"
+                        placeholder={activeCheckInRecord ? "Add any clock-out notes..." : "Enter notes e.g., Lab room number, topic..."}
+                        value={terminalNotes}
+                        onChange={(e) => setTerminalNotes(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="btn-group">
+                      {activeCheckInRecord ? (
+                        <button type="submit" className="btn btn-danger" disabled={isScanning}>
+                          {isScanning ? 'Processing FaceID...' : <>
+                            <LogOut size={16} /> Record Clock-Out
+                          </>}
+                        </button>
+                      ) : (
+                        <button type="submit" className="btn btn-success" disabled={isScanning}>
+                          {isScanning ? 'Processing FaceID...' : <>
+                            <UserCheck size={16} /> Record Clock-In
+                          </>}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="btn btn-outline"
+                        onClick={() => { setSelectedUser(null); setTerminalSearch(''); }}
+                        style={{ width: '40%' }}
+                        disabled={isScanning}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div style={{ padding: '3.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)', border: '1px dashed var(--card-border)', borderRadius: 'var(--radius-md)' }}>
+                    <MapPin size={32} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                    <p style={{ fontSize: '0.95rem' }}>Search and select a profile above to initiate a Clock-in or Clock-out log.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 2. STUDENTS TAB */}
+        {activeTab === 'students' && (
+          <div>
+            <div className="header-container">
+              <div className="header-title">
+                <h1>Students Directory</h1>
+                <p>Manage enrolled students details, view logs, and add new registrations.</p>
+              </div>
+              <div className="header-actions">
+                <input
+                  type="file"
+                  accept=".csv"
+                  id="student-import-input"
+                  style={{ display: 'none' }}
+                  onChange={(e) => handleImportCSV(e, 'student')}
+                />
+                <button
+                  className="btn btn-outline"
+                  style={{ width: 'auto' }}
+                  onClick={() => document.getElementById('student-import-input').click()}
+                >
+                  Import Excel/CSV
+                </button>
+                <button
+                  className="btn btn-outline"
+                  style={{ width: 'auto' }}
+                  onClick={() => handleExportCSV('student')}
+                >
+                  Export to Excel
+                </button>
+                {selectedStudentIds.length > 0 && (
+                  <button
+                    className="btn btn-danger"
+                    style={{ width: 'auto' }}
+                    onClick={handleBulkDeleteStudents}
+                  >
+                    <Trash2 size={16} style={{ marginRight: '0.4rem' }} /> Delete Selected ({selectedStudentIds.length})
+                  </button>
+                )}
+                <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => setStudentModal({ show: true, mode: 'add', data: { student_id: generateNextStudentID() } })}>
+                  <Plus size={16} /> Register Student
+                </button>
+              </div>
+            </div>
+
+            {/* Filter controls */}
+            <div className="card filter-bar">
+              <div className="filter-search" style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  className="form-input"
+                  style={{ paddingLeft: '2.5rem' }}
+                  placeholder="Search by Name, ID, or Phone..."
+                  value={studentSearch}
+                  onChange={(e) => setStudentSearch(e.target.value)}
+                />
+                <Search size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              </div>
+
+              <div>
+                <select
+                  className="form-select"
+                  value={studentDeptFilter}
+                  onChange={(e) => setStudentDeptFilter(e.target.value)}
+                >
+                  <option value="">All Departments</option>
+                  <option value="Phonics">Phonics</option>
+                  <option value="Handwriting">Handwriting</option>
+                </select>
+              </div>
+
+              <div>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Filter by Batch (e.g. 2026)..."
+                  value={studentBatchFilter}
+                  onChange={(e) => setStudentBatchFilter(e.target.value)}
+                />
+              </div>
+
+              {(studentSearch || studentDeptFilter || studentBatchFilter) && (
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  style={{ width: 'auto', padding: '0.6rem 1rem' }}
+                  onClick={() => {
+                    setStudentSearch('');
+                    setStudentDeptFilter('');
+                    setStudentBatchFilter('');
+                  }}
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+
+            {/* Students List Display */}
+            <div className="card table-card">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '40px' }}>
+                      <input
+                        type="checkbox"
+                        checked={students.length > 0 && selectedStudentIds.length === students.length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedStudentIds(students.map(s => s.id));
+                          } else {
+                            setSelectedStudentIds([]);
+                          }
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      />
+                    </th>
+                    <th>Student ID</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Department</th>
+                    <th>Batch</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedStudents.length > 0 ? (
+                    paginatedStudents.map(student => (
+                      <tr key={student.id} className={selectedStudentIds.includes(student.id) ? 'selected-row' : ''}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={selectedStudentIds.includes(student.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedStudentIds([...selectedStudentIds, student.id]);
+                              } else {
+                                setSelectedStudentIds(selectedStudentIds.filter(id => id !== student.id));
+                              }
+                            }}
+                            style={{ cursor: 'pointer' }}
+                          />
+                        </td>
+                        <td style={{ fontWeight: 600, color: 'var(--primary)' }}>{student.student_id}</td>
+                        <td style={{ fontWeight: 600 }}>{student.name}</td>
+                        <td style={{ color: 'var(--text-secondary)' }}>{student.phone}</td>
+                        <td>{student.department}</td>
+                        <td>
+                          <span className="badge badge-student">{student.batch}</span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                            <button
+                              className="btn btn-outline"
+                              style={{ padding: '0.4rem', width: 'auto' }}
+                              onClick={() => setStudentModal({ show: true, mode: 'edit', data: student })}
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button
+                              className="btn btn-outline"
+                              style={{ padding: '0.4rem', width: 'auto', borderColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--danger)' }}
+                              onClick={() => handleDeleteStudent(student.id, student.name)}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                        No students registered. Click "Register Student" to add.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              {renderPagination(studentPage, filteredStudents.length, setStudentPage)}
+            </div>
+          </div>
+        )}
+
+        {/* 3. STAFF TAB */}
+        {activeTab === 'staff' && (
+          <div>
+            <div className="header-container">
+              <div className="header-title">
+                <h1>Staff Directory</h1>
+                <p>Manage academic and laboratory staff profiles and registrations.</p>
+              </div>
+              <div className="header-actions">
+                <input
+                  type="file"
+                  accept=".csv"
+                  id="staff-import-input"
+                  style={{ display: 'none' }}
+                  onChange={(e) => handleImportCSV(e, 'staff')}
+                />
+                <button
+                  className="btn btn-outline"
+                  style={{ width: 'auto' }}
+                  onClick={() => document.getElementById('staff-import-input').click()}
+                >
+                  Import Excel/CSV
+                </button>
+                <button
+                  className="btn btn-outline"
+                  style={{ width: 'auto' }}
+                  onClick={() => handleExportCSV('staff')}
+                >
+                  Export to Excel
+                </button>
+                {selectedStaffIds.length > 0 && (
+                  <button
+                    className="btn btn-danger"
+                    style={{ width: 'auto' }}
+                    onClick={handleBulkDeleteStaff}
+                  >
+                    <Trash2 size={16} style={{ marginRight: '0.4rem' }} /> Delete Selected ({selectedStaffIds.length})
+                  </button>
+                )}
+                <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => setStaffModal({ show: true, mode: 'add', data: { staff_id: generateNextStaffID() } })}>
+                  <Plus size={16} /> Register Staff
+                </button>
+              </div>
+            </div>
+
+            {/* Filter controls */}
+            <div className="card filter-bar">
+              <div className="filter-search" style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  className="form-input"
+                  style={{ paddingLeft: '2.5rem' }}
+                  placeholder="Search by Name, ID, or Phone..."
+                  value={staffSearch}
+                  onChange={(e) => setStaffSearch(e.target.value)}
+                />
+                <Search size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              </div>
+
+              <div>
+                <select
+                  className="form-select"
+                  value={staffDeptFilter}
+                  onChange={(e) => setStaffDeptFilter(e.target.value)}
+                >
+                  <option value="">All Departments</option>
+                  <option value="Phonics">Phonics</option>
+                  <option value="Handwriting">Handwriting</option>
+                  <option value="Administration">Administration</option>
+                </select>
+              </div>
+
+              {(staffSearch || staffDeptFilter) && (
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  style={{ width: 'auto', padding: '0.6rem 1rem' }}
+                  onClick={() => {
+                    setStaffSearch('');
+                    setStaffDeptFilter('');
+                  }}
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+
+            {/* Staff List Display */}
+            <div className="card table-card">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '40px' }}>
+                      <input
+                        type="checkbox"
+                        checked={staff.length > 0 && selectedStaffIds.length === staff.length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedStaffIds(staff.map(m => m.id));
+                          } else {
+                            setSelectedStaffIds([]);
+                          }
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      />
+                    </th>
+                    <th>Staff ID</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Department</th>
+                    <th>Designation</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedStaff.length > 0 ? (
+                    paginatedStaff.map(member => (
+                      <tr key={member.id} className={selectedStaffIds.includes(member.id) ? 'selected-row' : ''}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={selectedStaffIds.includes(member.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedStaffIds([...selectedStaffIds, member.id]);
+                              } else {
+                                setSelectedStaffIds(selectedStaffIds.filter(id => id !== member.id));
+                              }
+                            }}
+                            style={{ cursor: 'pointer' }}
+                          />
+                        </td>
+                        <td style={{ fontWeight: 600, color: 'var(--secondary)' }}>{member.staff_id}</td>
+                        <td style={{ fontWeight: 600 }}>{member.name}</td>
+                        <td style={{ color: 'var(--text-secondary)' }}>{member.phone}</td>
+                        <td>{member.department}</td>
+                        <td>
+                          <span className="badge badge-staff">{member.designation}</span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                            <button
+                              className="btn btn-outline"
+                              style={{ padding: '0.4rem', width: 'auto' }}
+                              onClick={() => setStaffModal({ show: true, mode: 'edit', data: member })}
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button
+                              className="btn btn-outline"
+                              style={{ padding: '0.4rem', width: 'auto', borderColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--danger)' }}
+                              onClick={() => handleDeleteStaff(member.id, member.name)}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                        No staff members registered. Click "Register Staff" to add.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              {renderPagination(staffPage, filteredStaff.length, setStaffPage)}
+            </div>
+          </div>
+        )}
+
+        {/* 4. TIMESHEET LOGS TAB */}
+        {activeTab === 'logs' && (
+          <div>
+            <div className="header-container">
+              <div className="header-title">
+                <h1>Timesheet Entry Logs</h1>
+                <p>View full details of historical clock-ins, clock-outs, and query logs.</p>
+              </div>
+              <div className="header-actions">
+                <label className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', margin: 0, width: 'auto' }}>
+                  <Upload size={16} /> Import Excel/CSV
+                  <input type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportLogsCSV} />
+                </label>
+                <button className="btn btn-outline" style={{ width: 'auto' }} onClick={handleExportLogsCSV}>
+                  <Download size={16} /> Export to Excel
+                </button>
+                {selectedLogIds.length > 0 && (
+                  <button
+                    className="btn btn-danger"
+                    style={{ width: 'auto' }}
+                    onClick={handleBulkDeleteLogs}
+                  >
+                    <Trash2 size={16} style={{ marginRight: '0.4rem' }} /> Delete Selected ({selectedLogIds.length})
+                  </button>
+                )}
+                <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => setManualLogModal(true)}>
+                  <Plus size={16} /> Add Manual Log
+                </button>
+              </div>
+            </div>
+
+            {/* Filter controls */}
+            <div className="card filter-bar">
+              <div className="filter-search" style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  className="form-input"
+                  style={{ paddingLeft: '2.5rem' }}
+                  placeholder="Search by Name or ID..."
+                  value={logFilter.search}
+                  onChange={(e) => setLogFilter(prev => ({ ...prev, search: e.target.value }))}
+                />
+                <Search size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              </div>
+
+              <div>
+                <select
+                  className="form-select"
+                  value={logFilter.userType}
+                  onChange={(e) => setLogFilter(prev => ({ ...prev, userType: e.target.value }))}
+                >
+                  <option value="">All Users</option>
+                  <option value="student">Students Only</option>
+                  <option value="staff">Staff Only</option>
+                </select>
+              </div>
+
+              <div>
+                <select
+                  className="form-select"
+                  value={logFilter.checkedIn}
+                  onChange={(e) => setLogFilter(prev => ({ ...prev, checkedIn: e.target.value }))}
+                >
+                  <option value="">All Statuses</option>
+                  <option value="true">Clocked In (Active)</option>
+                  <option value="false">Clocked Out (Completed)</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>From</span>
+                <input
+                  type="date"
+                  className="form-input"
+                  style={{ padding: '0.5rem 0.75rem', fontSize: '0.85rem' }}
+                  value={logFilter.startDate}
+                  onChange={(e) => setLogFilter(prev => ({ ...prev, startDate: e.target.value }))}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>To</span>
+                <input
+                  type="date"
+                  className="form-input"
+                  style={{ padding: '0.5rem 0.75rem', fontSize: '0.85rem' }}
+                  value={logFilter.endDate}
+                  onChange={(e) => setLogFilter(prev => ({ ...prev, endDate: e.target.value }))}
+                />
+              </div>
+
+              {(logFilter.userType || logFilter.checkedIn || logFilter.startDate || logFilter.endDate || logFilter.search) && (
+                <button
+                  className="btn btn-outline"
+                  style={{ width: 'auto', padding: '0.6rem 1rem' }}
+                  onClick={() => setLogFilter({ userType: '', checkedIn: '', startDate: '', endDate: '', search: '' })}
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+
+            {/* Entry logs list */}
+            <div className="card table-card">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '40px' }}>
+                      <input
+                        type="checkbox"
+                        checked={logs.length > 0 && selectedLogIds.length === logs.length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedLogIds(logs.map(log => log.id));
+                          } else {
+                            setSelectedLogIds([]);
+                          }
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      />
+                    </th>
+                    <th>Type</th>
+                    <th>ID Code</th>
+                    <th>Name</th>
+                    <th>Department</th>
+                    <th>Date</th>
+                    <th>Clock In</th>
+                    <th>Clock Out</th>
+                    <th>Verification</th>
+                    <th>Purpose</th>
+                    <th>Notes</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedLogs.length > 0 ? (
+                    paginatedLogs.map(log => (
+                      <tr key={log.id} className={selectedLogIds.includes(log.id) ? 'selected-row' : ''}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={selectedLogIds.includes(log.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedLogIds([...selectedLogIds, log.id]);
+                              } else {
+                                setSelectedLogIds(selectedLogIds.filter(id => id !== log.id));
+                              }
+                            }}
+                            style={{ cursor: 'pointer' }}
+                          />
+                        </td>
+                        <td>
+                          <span className={`badge ${log.user_type === 'student' ? 'badge-student' : 'badge-staff'}`}>
+                            {log.user_type}
+                          </span>
+                        </td>
+                        <td style={{ fontWeight: 600 }}>{log.id_code}</td>
+                        <td style={{ fontWeight: 600 }}>{log.name}</td>
+                        <td>{log.department}</td>
+                        <td style={{ whiteSpace: 'nowrap' }}>{formatDate(log.date)}</td>
+                        <td style={{ fontWeight: 500, color: 'var(--success)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}>
+                            <span>{formatDateTime(log.check_in)}</span>
+                            {log.latitude_in && (
+                              <a
+                                href={`https://www.google.com/maps/search/?api=1&query=${log.latitude_in},${log.longitude_in}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="map-link-btn"
+                                title="View Clock-In GPS Location"
+                              >
+                                <MapPin size={14} />
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                        <td style={{ fontWeight: 500, color: log.check_out ? 'var(--text-secondary)' : 'var(--warning)' }}>
+                          {log.check_out ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}>
+                              <span>{formatDateTime(log.check_out)}</span>
+                              {log.latitude_out && (
+                                <a
+                                  href={`https://www.google.com/maps/search/?api=1&query=${log.latitude_out},${log.longitude_out}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="map-link-btn"
+                                  title="View Clock-Out GPS Location"
+                                >
+                                  <MapPin size={14} />
+                                </a>
+                              )}
+                            </div>
+                          ) : (
+                            <button
+                              className="btn btn-success"
+                              style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', borderRadius: '4px', width: 'auto' }}
+                              onClick={() => handleTableCheckOut(log.id, log.name)}
+                            >
+                              Clock Out
+                            </button>
+                          )}
+                        </td>
+                        <td>
+                          <div className="photo-thumbnail-container" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            {log.photo_in ? (
+                              <img
+                                src={log.photo_in}
+                                alt="In Face"
+                                className="photo-thumbnail"
+                                title="Click to view Clock-In Photo"
+                                onClick={() => setLightboxPhoto({ photo: log.photo_in, title: log.name, date: log.check_in, type: 'Clock In' })}
+                              />
+                            ) : (
+                              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>No In Photo</span>
+                            )}
+                            {log.photo_out ? (
+                              <img
+                                src={log.photo_out}
+                                alt="Out Face"
+                                className="photo-thumbnail"
+                                title="Click to view Clock-Out Photo"
+                                onClick={() => setLightboxPhoto({ photo: log.photo_out, title: log.name, date: log.check_out, type: 'Clock Out' })}
+                              />
+                            ) : log.check_out ? (
+                              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>No Out Photo</span>
+                            ) : null}
+                          </div>
+                        </td>
+                        <td>{log.purpose}</td>
+                        <td style={{ maxWidth: '150px' }}>
+                          <span className="truncate" style={{ maxWidth: '150px' }} title={log.notes}>
+                            {log.notes || '-'}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button
+                            className="btn btn-outline"
+                            style={{ padding: '0.4rem', width: 'auto', borderColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--danger)' }}
+                            onClick={() => handleDeleteLog(log.id)}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="12" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                        No entry logs found matching the filter options.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              {renderPagination(logPage, logs.length, setLogPage)}
+            </div>
+          </div>
+        )}
+
+      </main>
+
+      {/* ==========================================
+          MODALS & FORM POPUPS
+      ========================================== */}
+
+      {/* A. STUDENT REGISTRATION/EDIT MODAL */}
+      {studentModal.show && (
+        <div className="modal-overlay drawer">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2 className="modal-title">
+                {studentModal.mode === 'edit' ? 'Update Student Details' : 'Register New Student'}
+              </h2>
+              <button className="modal-close" onClick={() => setStudentModal({ show: false, mode: 'add', data: null })}>
+                <XCircle size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleStudentSubmit}>
+              <div className="form-group">
+                <label className="form-label">Student ID (Roll Number)</label>
+                <input
+                  type="text"
+                  name="student_id"
+                  required
+                  className="form-input"
+                  placeholder="e.g. STU004"
+                  defaultValue={studentModal.data ? studentModal.data.student_id : ''}
+                  readOnly={true}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Full Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  className="form-input"
+                  placeholder="e.g. Rahul Verma"
+                  defaultValue={studentModal.mode === 'edit' ? studentModal.data.name : ''}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Phone Number</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  required
+                  className="form-input"
+                  placeholder="e.g. +91 98765 43210"
+                  defaultValue={studentModal.mode === 'edit' ? studentModal.data.phone : ''}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Department</label>
+                <select
+                  name="department"
+                  required
+                  className="form-select"
+                  defaultValue={studentModal.mode === 'edit' ? studentModal.data.department : 'Phonics'}
+                >
+                  <option value="Phonics">Phonics</option>
+                  <option value="Handwriting">Hindi</option>
+                  <option value="Handwriting">Tamil</option>
+                  <option value="Handwriting">Grammar</option>
+                  <option value="Handwriting">Spoken </option>
+                  <option value="Handwriting">Handwriting</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Batch (Academic Years)</label>
+                <input
+                  type="text"
+                  name="batch"
+                  required
+                  className="form-input"
+                  placeholder="e.g. 2023-2027"
+                  defaultValue={studentModal.mode === 'edit' ? studentModal.data.batch : ''}
+                />
+              </div>
+
+              <div className="btn-group">
+                <button type="submit" className="btn btn-primary">
+                  {studentModal.mode === 'edit' ? 'Update Details' : 'Register Student'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => setStudentModal({ show: false, mode: 'add', data: null })}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* B. STAFF REGISTRATION/EDIT MODAL */}
+      {staffModal.show && (
+        <div className="modal-overlay drawer">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2 className="modal-title">
+                {staffModal.mode === 'edit' ? 'Update Staff Member' : 'Register New Staff Member'}
+              </h2>
+              <button className="modal-close" onClick={() => setStaffModal({ show: false, mode: 'add', data: null })}>
+                <XCircle size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleStaffSubmit}>
+              <div className="form-group">
+                <label className="form-label">Staff ID</label>
+                <input
+                  type="text"
+                  name="staff_id"
+                  required
+                  className="form-input"
+                  placeholder="e.g. STF003"
+                  defaultValue={staffModal.data ? staffModal.data.staff_id : ''}
+                  readOnly={true}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Full Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  className="form-input"
+                  placeholder="e.g. Dr. Kavita Rao"
+                  defaultValue={staffModal.mode === 'edit' ? staffModal.data.name : ''}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Phone Number</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  required
+                  className="form-input"
+                  placeholder="e.g. +91 98765 43210"
+                  defaultValue={staffModal.mode === 'edit' ? staffModal.data.phone : ''}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Department</label>
+                <select
+                  name="department"
+                  required
+                  className="form-select"
+                  defaultValue={staffModal.mode === 'edit' ? staffModal.data.department : 'Phonics'}
+                >
+                  <option value="Phonics">Phonics</option>
+                  <option value="Handwriting">Handwriting</option>
+                  <option value="Administration">Administration</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Designation / Role</label>
+                <input
+                  type="text"
+                  name="designation"
+                  required
+                  className="form-input"
+                  placeholder="e.g. Associate Professor, HOD"
+                  defaultValue={staffModal.mode === 'edit' ? staffModal.data.designation : ''}
+                />
+              </div>
+
+              <div className="btn-group">
+                <button type="submit" className="btn btn-primary">
+                  {staffModal.mode === 'edit' ? 'Update Details' : 'Register Staff'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => setStaffModal({ show: false, mode: 'add', data: null })}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* C. MANUAL ENTRY LOG MODAL */}
+      {manualLogModal && (
+        <div className="modal-overlay drawer">
+          <div className="modal-content" style={{ maxWidth: '550px' }}>
+            <div className="modal-header">
+              <h2 className="modal-title">Create Manual Entry Log</h2>
+              <button className="modal-close" onClick={() => setManualLogModal(false)}>
+                <XCircle size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleManualLogSubmit}>
+              <div className="form-group" style={{ position: 'relative' }}>
+                <label className="form-label">Select User (Student or Staff)</label>
+
+                {/* Search Input Box / Selected User Display */}
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="🔍 Search name, ID, or phone..."
+                    style={{ paddingRight: '2.5rem', cursor: 'pointer' }}
+                    value={isManualUserDropdownOpen ? manualUserSearch : (selectedManualUser ? selectedManualUser.display : '')}
+                    onChange={(e) => {
+                      setManualUserSearch(e.target.value);
+                      setIsManualUserDropdownOpen(true);
+                    }}
+                    onFocus={() => setIsManualUserDropdownOpen(true)}
+                    required={!selectedManualUser}
+                  />
+                  {selectedManualUser && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedManualUser(null);
+                        setManualUserSearch('');
+                      }}
+                      style={{
+                        position: 'absolute',
+                        right: '0.75rem',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Hidden input to pass value during submit */}
+                <input
+                  type="hidden"
+                  name="manual_user"
+                  value={selectedManualUser ? `${selectedManualUser.type}:${selectedManualUser.id}` : ''}
+                  required
+                />
+
+                {/* Dropdown Options List */}
+                {isManualUserDropdownOpen && (
+                  <>
+                    {/* Overlay to close the dropdown when clicking outside */}
+                    <div
+                      style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        zIndex: 999
+                      }}
+                      onClick={() => setIsManualUserDropdownOpen(false)}
+                    />
+
+                    <div className="card" style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      maxHeight: '260px',
+                      overflowY: 'auto',
+                      zIndex: 1000,
+                      marginTop: '0.35rem',
+                      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)',
+                      background: 'var(--card-bg)',
+                      border: '1px solid var(--card-border)',
+                      borderRadius: 'var(--radius-md)'
+                    }}>
+
+                      {filteredManualStudents.length === 0 && filteredManualStaff.length === 0 ? (
+                        <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                          No matching users found
+                        </div>
+                      ) : (
+                        <>
+                          {filteredManualStudents.length > 0 && (
+                            <div>
+                              <div style={{
+                                padding: '0.4rem 0.8rem',
+                                background: 'rgba(255, 73, 121, 0.05)',
+                                color: 'var(--primary)',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em'
+                              }}>
+                                Students
+                              </div>
+                              {filteredManualStudents.map(s => (
+                                <div
+                                  key={`stud-${s.id}`}
+                                  onClick={() => {
+                                    setSelectedManualUser({
+                                      id: s.id,
+                                      name: s.name,
+                                      type: 'student',
+                                      display: `${s.name} (${s.student_id} - Student)`
+                                    });
+                                    setIsManualUserDropdownOpen(false);
+                                  }}
+                                  style={{
+                                    padding: '0.65rem 0.8rem',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem',
+                                    borderBottom: '1px solid rgba(255, 255, 255, 0.02)',
+                                    transition: 'background 0.2s',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.1rem'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+                                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                >
+                                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{s.name}</span>
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ID: {s.student_id} • Dept: {s.department}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {filteredManualStaff.length > 0 && (
+                            <div>
+                              <div style={{
+                                padding: '0.4rem 0.8rem',
+                                background: 'rgba(124, 58, 237, 0.05)',
+                                color: 'var(--secondary)',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em'
+                              }}>
+                                Staff Members
+                              </div>
+                              {filteredManualStaff.map(st => (
+                                <div
+                                  key={`stf-${st.id}`}
+                                  onClick={() => {
+                                    setSelectedManualUser({
+                                      id: st.id,
+                                      name: st.name,
+                                      type: 'staff',
+                                      display: `${st.name} (${st.staff_id} - Staff)`
+                                    });
+                                    setIsManualUserDropdownOpen(false);
+                                  }}
+                                  style={{
+                                    padding: '0.65rem 0.8rem',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem',
+                                    borderBottom: '1px solid rgba(255, 255, 255, 0.02)',
+                                    transition: 'background 0.2s',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.1rem'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+                                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                >
+                                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{st.name}</span>
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ID: {st.staff_id} • Dept: {st.department}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Entry Date</label>
+                <input type="date" name="date" required className="form-input" defaultValue={new Date().toISOString().slice(0, 10)} />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Clock-In Time</label>
+                  <input type="time" name="check_in_time" required className="form-input" defaultValue="09:00" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Clock-Out Time</label>
+                  <input type="time" name="check_out_time" required className="form-input" defaultValue="17:00" />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Purpose of Entry</label>
+                <select name="purpose" className="form-select">
+                  <option value="General">General / Routine Entry</option>
+                  <option value="Lecture / Class">Lecture / Class</option>
+                  <option value="Lab Work">Laboratory / Practical Work</option>
+                  <option value="Library">Library Study</option>
+                  <option value="Meeting / Admin">Meeting / Administrative Work</option>
+                  <option value="Sports / Event">Sports / Event</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Notes / Remarks</label>
+                <textarea name="notes" className="form-textarea" placeholder="Add additional notes here..." />
+              </div>
+
+              <div className="btn-group">
+                <button type="submit" className="btn btn-primary">Create Log Entry</button>
+                <button type="button" className="btn btn-outline" onClick={() => setManualLogModal(false)}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* D. FACEID PHOTO LIGHTBOX POPUP */}
+      {lightboxPhoto && (
+        <div className="lightbox-overlay" onClick={() => setLightboxPhoto(null)}>
+          <button className="lightbox-close" onClick={() => setLightboxPhoto(null)}>
+            <X size={28} />
+          </button>
+          <img src={lightboxPhoto.photo} alt="Verification Face" className="lightbox-content" />
+          <div className="lightbox-title">{lightboxPhoto.title}</div>
+          <div className="lightbox-subtitle">
+            {lightboxPhoto.type} Verification on {formatDateTime(lightboxPhoto.date)}
+          </div>
+        </div>
+      )}
+      {/* E. REUSABLE PREMIUM CONFIRM MODAL */}
+      {confirmModal.show && (
+        <div className="modal-overlay" style={{ zIndex: 1100 }}>
+          <div className="modal-content card" style={{ maxWidth: '400px', animation: 'fadeIn 0.25s ease-out' }}>
+            <div className="modal-header" style={{ marginBottom: '1rem', borderBottom: 'none', padding: 0 }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)' }}>
+                <Info size={20} style={{ color: 'var(--warning)' }} />
+                {confirmModal.title}
+              </h2>
+            </div>
+            <div className="modal-body" style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.5', marginBottom: '1.5rem' }}>
+              {confirmModal.message}
+            </div>
+            <div className="btn-group" style={{ marginTop: 0, justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={closeConfirm}
+                style={{ width: 'auto', padding: '0.6rem 1.25rem' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => { confirmModal.onConfirm(); closeConfirm(); }}
+                style={{ width: 'auto', padding: '0.6rem 1.25rem' }}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
