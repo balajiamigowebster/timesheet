@@ -877,12 +877,24 @@ export default function App() {
         const data = await res.json();
         showAlert(`Clocked-out ${log.name}`);
         
+        // Lookup phone number from frontend state to be 100% independent of backend query updates!
+        let userPhone = log.phone;
+        if (!userPhone) {
+          if (log.user_type === 'student') {
+            const match = students.find(s => s.id === log.student_ref_id || s.student_id === log.id_code);
+            if (match) userPhone = match.phone;
+          } else if (log.user_type === 'staff') {
+            const match = staff.find(st => st.id === log.staff_ref_id || st.staff_id === log.id_code);
+            if (match) userPhone = match.phone;
+          }
+        }
+
         // Trigger WhatsApp Redirect directly without opening a new tab
-        if (log.phone) {
+        if (userPhone) {
           const checkOutTime = data.check_out || new Date().toISOString();
           const { timeStr, dateStr } = formatWhatsAppDateTime(checkOutTime);
           const msg = `*From Madhusphonics*\n\nHello ${log.name}, you have successfully checked out at ${timeStr} on ${dateStr} - Madhu's Phonics & Handwriting....Thank you\n\nFor more info: www.madhusphonics.in.`;
-          let cleanPhone = log.phone.replace(/[\s\-()]/g, '');
+          let cleanPhone = userPhone.replace(/[\s\-()]/g, '');
           if (cleanPhone.length === 10 && /^\d+$/.test(cleanPhone)) {
             cleanPhone = '91' + cleanPhone;
           }
