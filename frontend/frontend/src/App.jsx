@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  Users,
-  UserCheck,
-  Clock,
-  BookOpen,
-  Search,
-  Plus,
-  Edit2,
-  Trash2,
-  FileText,
-  CheckCircle,
-  XCircle,
-  ArrowRightLeft,
+import { 
+  Users, 
+  UserCheck, 
+  Clock, 
+  BookOpen, 
+  Search, 
+  Plus, 
+  Edit2, 
+  Trash2, 
+  FileText, 
+  CheckCircle, 
+  XCircle, 
+  ArrowRightLeft, 
   Info,
   Calendar,
   LogOut,
@@ -92,7 +92,7 @@ export default function App() {
     weeklyData: [],
     recentLogs: []
   });
-
+  
   // Alert/Notification State
   const [alert, setAlert] = useState(null);
 
@@ -129,7 +129,7 @@ export default function App() {
   const [terminalPurpose, setTerminalPurpose] = useState('General');
   const [terminalNotes, setTerminalNotes] = useState('');
   const [activeCheckInRecord, setActiveCheckInRecord] = useState(null);
-
+  
   // Phase 2 Geolocation and FaceID states
   const [location, setLocation] = useState(null);
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
@@ -239,14 +239,14 @@ export default function App() {
     e.preventDefault();
     setLoginError('');
     setIsLoggingIn(true);
-
+    
     try {
       const res = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: loginUsername, password: loginPassword })
       });
-
+      
       const data = await res.json();
       if (res.ok) {
         localStorage.setItem('adminToken', data.token);
@@ -348,11 +348,11 @@ export default function App() {
     }
 
     const searchLower = terminalSearch.toLowerCase();
-
+    
     const matchedStudents = students
       .filter(s => s.name.toLowerCase().includes(searchLower) || s.student_id.toLowerCase().includes(searchLower))
       .map(s => ({ ...s, user_type: 'student', idCode: s.student_id }));
-
+      
     const matchedStaff = staff
       .filter(st => st.name.toLowerCase().includes(searchLower) || st.staff_id.toLowerCase().includes(searchLower))
       .map(st => ({ ...st, user_type: 'staff', idCode: st.staff_id }));
@@ -543,7 +543,7 @@ export default function App() {
 
       if (res.ok) {
         showAlert(`Successfully clocked-in ${selectedUser.name}`);
-
+        
         // Trigger WhatsApp Redirect directly without opening a new tab
         const url = getWhatsAppUrl('in', selectedUser, data.check_in || new Date().toLocaleTimeString());
         if (url) {
@@ -566,22 +566,22 @@ export default function App() {
 
   const executeCheckOut = async (photoBase64) => {
     try {
-      const payload = activeCheckInRecord
-        ? {
-          entry_id: activeCheckInRecord.id,
-          notes: terminalNotes,
-          latitude: location && !location.error ? location.latitude : null,
-          longitude: location && !location.error ? location.longitude : null,
-          photo: photoBase64
-        }
-        : {
-          user_type: terminalUserType,
-          user_id: selectedUser.id,
-          notes: terminalNotes,
-          latitude: location && !location.error ? location.latitude : null,
-          longitude: location && !location.error ? location.longitude : null,
-          photo: photoBase64
-        };
+      const payload = activeCheckInRecord 
+        ? { 
+            entry_id: activeCheckInRecord.id, 
+            notes: terminalNotes,
+            latitude: location && !location.error ? location.latitude : null,
+            longitude: location && !location.error ? location.longitude : null,
+            photo: photoBase64
+          }
+        : { 
+            user_type: terminalUserType, 
+            user_id: selectedUser.id, 
+            notes: terminalNotes,
+            latitude: location && !location.error ? location.latitude : null,
+            longitude: location && !location.error ? location.longitude : null,
+            photo: photoBase64
+          };
 
       const res = await fetch(`${API_URL}/timesheet/check-out`, {
         method: 'POST',
@@ -593,7 +593,7 @@ export default function App() {
 
       if (res.ok) {
         showAlert(`Successfully clocked-out ${selectedUser.name}`);
-
+        
         // Trigger WhatsApp Redirect directly without opening a new tab
         const url = getWhatsAppUrl('out', selectedUser, data.check_out || new Date().toLocaleTimeString());
         if (url) {
@@ -911,7 +911,7 @@ export default function App() {
 
   const exportToCSV = (data, filename, fields) => {
     const csvHeaders = fields.map(f => f.label).join(',');
-    const csvRows = data.map(row =>
+    const csvRows = data.map(row => 
       fields.map(f => {
         const val = row[f.key] || '';
         return `"${String(val).replace(/"/g, '""')}"`;
@@ -940,7 +940,7 @@ export default function App() {
     reader.onload = async (e) => {
       const text = e.target.result;
       const parsedData = parseCSV(text, type);
-
+      
       if (parsedData.length === 0) {
         showAlert('No valid data found in CSV file', 'danger');
         return;
@@ -991,7 +991,7 @@ export default function App() {
       } else if (failCount > 0) {
         showAlert(`Failed to import records. Errors: ${errorMsgs.slice(0, 3).join(', ')}`, 'danger');
       }
-
+      
       event.target.value = '';
     };
 
@@ -1087,7 +1087,7 @@ export default function App() {
       } else if (failCount > 0) {
         showAlert(`Failed to import logs. Errors: ${errorMsgs.slice(0, 3).join(', ')}`, 'danger');
       }
-
+      
       event.target.value = '';
     };
 
@@ -1097,11 +1097,11 @@ export default function App() {
   const parseLogsCSV = (text) => {
     const lines = text.split(/\r?\n/);
     if (lines.length === 0) return [];
-
+    
     const firstLine = lines[0];
     if (!firstLine) return [];
-
-    const headers = firstLine.split(',').map(h =>
+    
+    const headers = firstLine.split(',').map(h => 
       h.trim().replace(/^["']|["']$/g, '').toLowerCase()
     );
 
@@ -1130,7 +1130,7 @@ export default function App() {
       const entry = {};
       headers.forEach((header, index) => {
         const val = matches[index] || '';
-
+        
         // Map headers loosely
         if (header.includes('type')) {
           entry.user_type = val.toLowerCase().includes('staff') ? 'staff' : 'student';
@@ -1159,11 +1159,11 @@ export default function App() {
   const parseCSV = (text, type) => {
     const lines = text.split(/\r?\n/);
     if (lines.length === 0) return [];
-
+    
     const firstLine = lines[0];
     if (!firstLine) return [];
-
-    const headers = firstLine.split(',').map(h =>
+    
+    const headers = firstLine.split(',').map(h => 
       h.trim().replace(/^["']|["']$/g, '').toLowerCase()
     );
 
@@ -1205,7 +1205,7 @@ export default function App() {
         } else if (header.includes('designation') || header.includes('role') || header.includes('title')) {
           key = 'designation';
         }
-
+        
         entry[key] = matches[index] || '';
       });
 
@@ -1217,7 +1217,7 @@ export default function App() {
   // Date/Time formatting helpers
   const formatWhatsAppDateTime = (dateStr) => {
     const d = dateStr ? new Date(dateStr) : new Date();
-
+    
     // Time formatting: 6.00pm
     let hours = d.getHours();
     const minutes = d.getMinutes();
@@ -1226,13 +1226,13 @@ export default function App() {
     hours = hours ? hours : 12; // 0 should be 12
     const minStr = minutes < 10 ? '0' + minutes : minutes;
     const timeFormatted = `${hours}.${minStr}${ampm}`;
-
+    
     // Date formatting: D/M/YYYY
     const day = d.getDate();
     const month = d.getMonth() + 1;
     const year = d.getFullYear();
     const dateFormatted = `${day}/${month}/${year}`;
-
+    
     return { timeStr: timeFormatted, dateStr: dateFormatted };
   };
 
@@ -1299,8 +1299,8 @@ export default function App() {
                 height: '90px',
                 margin: '0 auto 1.25rem'
               }}>
-                <svg
-                  viewBox="0 0 100 60"
+                <svg 
+                  viewBox="0 0 100 60" 
                   style={{
                     position: 'absolute',
                     top: '-24px',
@@ -1316,7 +1316,7 @@ export default function App() {
                   <path d="M50,22 L15,32 L15,45" fill="none" stroke="#FFD700" strokeWidth="2.5" strokeLinecap="round" />
                   <circle cx="15" cy="45" r="3" fill="#FFD700" />
                 </svg>
-
+                
                 <div style={{
                   position: 'relative',
                   width: '90px',
@@ -1331,8 +1331,8 @@ export default function App() {
                   overflow: 'hidden',
                   zIndex: 1
                 }}>
-                  <img
-                    src="https://madhusphonics.com/wp-content/uploads/2024/01/logo-2.png"
+                  <img 
+                    src="https://madhusphonics.com/wp-content/uploads/2024/01/logo-2.png" 
                     alt="Madhusphonics Logo"
                     style={{ width: '90%', height: '90%', objectFit: 'contain' }}
                   />
@@ -1369,7 +1369,7 @@ export default function App() {
             <form onSubmit={handleLogin}>
               <div className="form-group" style={{ marginBottom: '1.25rem' }}>
                 <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Admin Username</label>
-                <input
+                <input 
                   type="text"
                   className="form-input"
                   placeholder="Enter username"
@@ -1383,7 +1383,7 @@ export default function App() {
               <div className="form-group" style={{ marginBottom: '1.75rem' }}>
                 <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Admin Password</label>
                 <div style={{ position: 'relative' }}>
-                  <input
+                  <input 
                     type={showLoginPassword ? "text" : "password"}
                     className="form-input"
                     placeholder="Enter password"
@@ -1414,9 +1414,9 @@ export default function App() {
                 </div>
               </div>
 
-              <button
-                type="submit"
-                className="btn btn-primary"
+              <button 
+                type="submit" 
+                className="btn btn-primary" 
                 disabled={isLoggingIn}
                 style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
               >
@@ -1433,26 +1433,26 @@ export default function App() {
 
   // Client-side search and filtering for students
   const filteredStudents = students.filter(student => {
-    const matchesSearch =
+    const matchesSearch = 
       student.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
       student.student_id.toLowerCase().includes(studentSearch.toLowerCase()) ||
       (student.phone && student.phone.replace(/[\s\-()]/g, '').includes(studentSearch.replace(/[\s\-()]/g, '')));
-
+      
     const matchesDept = !studentDeptFilter || student.department === studentDeptFilter;
     const matchesBatch = !studentBatchFilter || student.batch === studentBatchFilter;
-
+    
     return matchesSearch && matchesDept && matchesBatch;
   });
 
   // Client-side search and filtering for staff
   const filteredStaff = staff.filter(member => {
-    const matchesSearch =
+    const matchesSearch = 
       member.name.toLowerCase().includes(staffSearch.toLowerCase()) ||
       member.staff_id.toLowerCase().includes(staffSearch.toLowerCase()) ||
       (member.phone && member.phone.replace(/[\s\-()]/g, '').includes(staffSearch.replace(/[\s\-()]/g, '')));
-
+      
     const matchesDept = !staffDeptFilter || member.department === staffDeptFilter;
-
+    
     return matchesSearch && matchesDept;
   });
 
@@ -1528,15 +1528,15 @@ export default function App() {
           >
             Previous
           </button>
-
+          
           {pages.map(page => (
             <button
               type="button"
               key={page}
               className={`btn ${page === currentPage ? 'btn-primary' : 'btn-outline'}`}
-              style={{
-                padding: '0',
-                fontSize: '0.8rem',
+              style={{ 
+                padding: '0', 
+                fontSize: '0.8rem', 
                 width: '32px',
                 height: '32px',
                 display: 'flex',
@@ -1579,7 +1579,7 @@ export default function App() {
       </div>
 
       {/* Mobile Sidebar Overlay */}
-      <div
+      <div 
         className={`mobile-sidebar-overlay ${isMobileMenuOpen ? 'open' : ''}`}
         onClick={() => setIsMobileMenuOpen(false)}
       ></div>
@@ -1600,8 +1600,8 @@ export default function App() {
             boxShadow: '0 4px 12px rgba(255, 73, 121, 0.15)',
             flexShrink: 0
           }}>
-            <img
-              src="https://madhusphonics.com/wp-content/uploads/2024/01/logo-2.png"
+            <img 
+              src="https://madhusphonics.com/wp-content/uploads/2024/01/logo-2.png" 
               alt="Logo"
               style={{ width: '90%', height: '90%', objectFit: 'contain' }}
             />
@@ -1613,43 +1613,43 @@ export default function App() {
         </div>
 
         <nav className="nav-links">
-          <div
-            onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }}
+          <div 
+            onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }} 
             className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
           >
             <Clock size={18} />
             <span>Dashboard</span>
           </div>
-          <div
-            onClick={() => { setActiveTab('terminal'); setIsMobileMenuOpen(false); }}
+          <div 
+            onClick={() => { setActiveTab('terminal'); setIsMobileMenuOpen(false); }} 
             className={`nav-item ${activeTab === 'terminal' ? 'active' : ''}`}
           >
             <ArrowRightLeft size={18} />
             <span>Clock Terminal</span>
           </div>
-          <div
-            onClick={() => { setActiveTab('students'); setIsMobileMenuOpen(false); }}
+          <div 
+            onClick={() => { setActiveTab('students'); setIsMobileMenuOpen(false); }} 
             className={`nav-item ${activeTab === 'students' ? 'active' : ''}`}
           >
             <Users size={18} />
             <span>Students Directory</span>
           </div>
-          <div
-            onClick={() => { setActiveTab('staff'); setIsMobileMenuOpen(false); }}
+          <div 
+            onClick={() => { setActiveTab('staff'); setIsMobileMenuOpen(false); }} 
             className={`nav-item ${activeTab === 'staff' ? 'active' : ''}`}
           >
             <UserCheck size={18} />
             <span>Staff Directory</span>
           </div>
-          <div
-            onClick={() => { setActiveTab('logs'); setIsMobileMenuOpen(false); }}
+          <div 
+            onClick={() => { setActiveTab('logs'); setIsMobileMenuOpen(false); }} 
             className={`nav-item ${activeTab === 'logs' ? 'active' : ''}`}
           >
             <FileText size={18} />
             <span>Timesheet Logs</span>
           </div>
-          <div
-            onClick={handleLogout}
+          <div 
+            onClick={handleLogout} 
             className="nav-item"
             style={{ marginTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem', color: '#f87171' }}
           >
@@ -1666,7 +1666,7 @@ export default function App() {
 
       {/* Main Panel Content */}
       <main className="main-content">
-
+        
         {/* Global Floating Alert Notification */}
         {alert && (
           <div className={`alert alert-${alert.type}`}>
@@ -1734,8 +1734,8 @@ export default function App() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1 }}>
                   {stats.recentLogs && stats.recentLogs.length > 0 ? (
                     stats.recentLogs.map(log => (
-                      <div
-                        key={log.id}
+                      <div 
+                        key={log.id} 
                         style={{
                           display: 'flex',
                           alignItems: 'flex-start',
@@ -1744,13 +1744,13 @@ export default function App() {
                           borderBottom: '1px solid rgba(255,255,255,0.04)',
                         }}
                       >
-                        <div style={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '50%',
-                          background: log.check_out ? 'rgba(148,163,184,0.1)' : 'var(--success-glow)',
-                          display: 'flex',
-                          alignItems: 'center',
+                        <div style={{ 
+                          width: '32px', 
+                          height: '32px', 
+                          borderRadius: '50%', 
+                          background: log.check_out ? 'rgba(148,163,184,0.1)' : 'var(--success-glow)', 
+                          display: 'flex', 
+                          alignItems: 'center', 
                           justifyContent: 'center',
                           color: log.check_out ? 'var(--text-secondary)' : 'var(--success)'
                         }}>
@@ -1785,96 +1785,96 @@ export default function App() {
           </div>
         )}
 
-        {/* 1.5. CLOCK TERMINAL TAB */}
-        {activeTab === 'terminal' && (
-          <div>
-            <div className="header-container">
-              <div className="header-title">
-                <h1>Clock In/Out Terminal</h1>
-                <p>Verify FaceID and resolve Geolocation details to record timesheet entries in real-time.</p>
-              </div>
+      {/* 1.5. CLOCK TERMINAL TAB */}
+      {activeTab === 'terminal' && (
+        <div>
+          <div className="header-container">
+            <div className="header-title">
+              <h1>Clock In/Out Terminal</h1>
+              <p>Verify FaceID and resolve Geolocation details to record timesheet entries in real-time.</p>
             </div>
+          </div>
 
-            <div style={{ maxWidth: '650px', margin: '0 auto' }}>
-              <div className="card">
-                <div className="terminal-header">
-                  <div className="terminal-title">
-                    <div className="indicator-dot"></div>
-                    <span>Live Clock-In & Clock-Out Terminal</span>
-                  </div>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Console Online</span>
+          <div style={{ maxWidth: '650px', margin: '0 auto' }}>
+            <div className="card">
+              <div className="terminal-header">
+                <div className="terminal-title">
+                  <div className="indicator-dot"></div>
+                  <span>Live Clock-In & Clock-Out Terminal</span>
                 </div>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Console Online</span>
+              </div>
 
-                <div ref={searchRef} style={{ position: 'relative', marginBottom: '1.25rem' }}>
-                  <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Search student or staff by Name or ID..."
-                    style={{ paddingLeft: '2.75rem' }}
-                    value={terminalSearch}
-                    onChange={(e) => setTerminalSearch(e.target.value)}
-                  />
-
-                  {suggestions.length > 0 && (
-                    <div className="autocomplete-results">
-                      {suggestions.map(user => {
-                        const isStudent = user.user_type === 'student';
-                        return (
-                          <div
-                            key={`${user.user_type}-${user.id}`}
-                            className="autocomplete-item"
-                            onClick={() => handleSelectUser(user)}
-                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                          >
-                            <div>
-                              <span style={{ fontWeight: 600, fontSize: '0.85rem' }} className="truncate">{user.name}</span>
-                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>({user.idCode})</span>
-                            </div>
-                            <span className={`badge ${isStudent ? 'badge-student' : 'badge-staff'}`} style={{ fontSize: '0.65rem', padding: '0.15rem 0.45rem' }}>
-                              {isStudent ? 'Student' : 'Staff'}
-                            </span>
+              <div ref={searchRef} style={{ position: 'relative', marginBottom: '1.25rem' }}>
+                <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  placeholder="Search student or staff by Name or ID..."
+                  style={{ paddingLeft: '2.75rem' }}
+                  value={terminalSearch}
+                  onChange={(e) => setTerminalSearch(e.target.value)}
+                />
+                
+                {suggestions.length > 0 && (
+                  <div className="autocomplete-results">
+                    {suggestions.map(user => {
+                      const isStudent = user.user_type === 'student';
+                      return (
+                        <div 
+                          key={`${user.user_type}-${user.id}`} 
+                          className="autocomplete-item"
+                          onClick={() => handleSelectUser(user)}
+                          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                        >
+                          <div>
+                            <span style={{ fontWeight: 600, fontSize: '0.85rem' }} className="truncate">{user.name}</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>({user.idCode})</span>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                {selectedUser ? (
-                  <form onSubmit={(e) => { e.preventDefault(); handleClockAction(activeCheckInRecord ? 'out' : 'in'); }}>
-
-                    <div className="card" style={{ background: 'var(--bg-secondary)', marginBottom: '1.5rem', borderColor: 'var(--card-border)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                          <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>{selectedUser.name}</h3>
-                          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                            {terminalUserType === 'student' ? `ID: ${selectedUser.student_id} | Batch: ${selectedUser.batch}` : `ID: ${selectedUser.staff_id} | Designation: ${selectedUser.designation}`}
-                          </p>
-                          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Department: {selectedUser.department}</p>
-                          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Phone: {selectedUser.phone}</p>
+                          <span className={`badge ${isStudent ? 'badge-student' : 'badge-staff'}`} style={{ fontSize: '0.65rem', padding: '0.15rem 0.45rem' }}>
+                            {isStudent ? 'Student' : 'Staff'}
+                          </span>
                         </div>
-                        <div>
-                          {activeCheckInRecord ? (
-                            <span className="badge badge-active">
-                              <Info size={12} /> Clocked In
-                            </span>
-                          ) : (
-                            <span className="badge badge-completed">
-                              <XCircle size={12} /> Clocked Out
-                            </span>
-                          )}
-                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {selectedUser ? (
+                <form onSubmit={(e) => { e.preventDefault(); handleClockAction(activeCheckInRecord ? 'out' : 'in'); }}>
+                  
+                  <div className="card" style={{ background: 'var(--bg-secondary)', marginBottom: '1.5rem', borderColor: 'var(--card-border)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>{selectedUser.name}</h3>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                          {terminalUserType === 'student' ? `ID: ${selectedUser.student_id} | Batch: ${selectedUser.batch}` : `ID: ${selectedUser.staff_id} | Designation: ${selectedUser.designation}`}
+                        </p>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Department: {selectedUser.department}</p>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Phone: {selectedUser.phone}</p>
                       </div>
-
-                      {activeCheckInRecord && (
-                        <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: '0.8rem', color: 'var(--success)' }}>
-                          Clocked-in on: {formatDateTime(activeCheckInRecord.check_in)}
-                        </div>
-                      )}
+                      <div>
+                        {activeCheckInRecord ? (
+                          <span className="badge badge-active">
+                            <Info size={12} /> Clocked In
+                          </span>
+                        ) : (
+                          <span className="badge badge-completed">
+                            <XCircle size={12} /> Clocked Out
+                          </span>
+                        )}
+                      </div>
                     </div>
+                    
+                    {activeCheckInRecord && (
+                      <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: '0.8rem', color: 'var(--success)' }}>
+                        Clocked-in on: {formatDateTime(activeCheckInRecord.check_in)}
+                      </div>
+                    )}
+                  </div>
 
-                    {/* Face ID camera preview commented out
+                  {/* Face ID camera preview commented out
                   <div className="camera-preview-container">
                     {cameraStream ? (
                       <video 
@@ -1918,84 +1918,84 @@ export default function App() {
                   </div>
                   */}
 
-                    <div className="location-status-badge">
-                      <MapPin size={16} style={{ color: location && !location.error ? 'var(--success)' : 'var(--text-muted)' }} />
-                      {isFetchingLocation ? (
-                        <span>Resolving GPS Geolocation...</span>
-                      ) : location ? (
-                        location.error ? (
-                          <span style={{ color: 'var(--danger)' }}>Location Error: {location.error}</span>
-                        ) : (
-                          <span>Location Locked: {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}</span>
-                        )
+                  <div className="location-status-badge">
+                    <MapPin size={16} style={{ color: location && !location.error ? 'var(--success)' : 'var(--text-muted)' }} />
+                    {isFetchingLocation ? (
+                      <span>Resolving GPS Geolocation...</span>
+                    ) : location ? (
+                      location.error ? (
+                        <span style={{ color: 'var(--danger)' }}>Location Error: {location.error}</span>
                       ) : (
-                        <span>Awaiting coordinates...</span>
-                      )}
-                    </div>
-
-                    {!activeCheckInRecord && (
-                      <div className="form-group">
-                        <label className="form-label">Purpose of Entry</label>
-                        <select
-                          className="form-select"
-                          value={terminalPurpose}
-                          onChange={(e) => setTerminalPurpose(e.target.value)}
-                        >
-                          <option value="General">General / Routine Entry</option>
-                          <option value="Lecture / Class">Lecture / Class</option>
-                          <option value="Lab Work">Laboratory / Practical Work</option>
-                          <option value="Library">Library Study</option>
-                          <option value="Meeting / Admin">Meeting / Administrative Work</option>
-                          <option value="Sports / Event">Sports / Event</option>
-                        </select>
-                      </div>
+                        <span>Location Locked: {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}</span>
+                      )
+                    ) : (
+                      <span>Awaiting coordinates...</span>
                     )}
-
-                    <div className="form-group">
-                      <label className="form-label">{activeCheckInRecord ? 'Clock-out Notes / Remarks (Optional)' : 'Clock-in Notes / Remarks (Optional)'}</label>
-                      <textarea
-                        className="form-textarea"
-                        placeholder={activeCheckInRecord ? "Add any clock-out notes..." : "Enter notes e.g., Lab room number, topic..."}
-                        value={terminalNotes}
-                        onChange={(e) => setTerminalNotes(e.target.value)}
-                      />
-                    </div>
-
-                    <div className="btn-group">
-                      {activeCheckInRecord ? (
-                        <button type="submit" className="btn btn-danger" disabled={isScanning}>
-                          {isScanning ? 'Processing FaceID...' : <>
-                            <LogOut size={16} /> Record Clock-Out
-                          </>}
-                        </button>
-                      ) : (
-                        <button type="submit" className="btn btn-success" disabled={isScanning}>
-                          {isScanning ? 'Processing FaceID...' : <>
-                            <UserCheck size={16} /> Record Clock-In
-                          </>}
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className="btn btn-outline"
-                        onClick={() => { setSelectedUser(null); setTerminalSearch(''); }}
-                        style={{ width: '40%' }}
-                        disabled={isScanning}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <div style={{ padding: '3.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)', border: '1px dashed var(--card-border)', borderRadius: 'var(--radius-md)' }}>
-                    <MapPin size={32} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-                    <p style={{ fontSize: '0.95rem' }}>Search and select a profile above to initiate a Clock-in or Clock-out log.</p>
                   </div>
-                )}
-              </div>
+
+                  {!activeCheckInRecord && (
+                    <div className="form-group">
+                      <label className="form-label">Purpose of Entry</label>
+                      <select 
+                        className="form-select"
+                        value={terminalPurpose}
+                        onChange={(e) => setTerminalPurpose(e.target.value)}
+                      >
+                        <option value="General">General / Routine Entry</option>
+                        <option value="Lecture / Class">Lecture / Class</option>
+                        <option value="Lab Work">Laboratory / Practical Work</option>
+                        <option value="Library">Library Study</option>
+                        <option value="Meeting / Admin">Meeting / Administrative Work</option>
+                        <option value="Sports / Event">Sports / Event</option>
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="form-group">
+                    <label className="form-label">{activeCheckInRecord ? 'Clock-out Notes / Remarks (Optional)' : 'Clock-in Notes / Remarks (Optional)'}</label>
+                    <textarea 
+                      className="form-textarea" 
+                      placeholder={activeCheckInRecord ? "Add any clock-out notes..." : "Enter notes e.g., Lab room number, topic..."}
+                      value={terminalNotes}
+                      onChange={(e) => setTerminalNotes(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="btn-group">
+                    {activeCheckInRecord ? (
+                      <button type="submit" className="btn btn-danger" disabled={isScanning}>
+                        {isScanning ? 'Processing FaceID...' : <>
+                          <LogOut size={16} /> Record Clock-Out
+                        </>}
+                      </button>
+                    ) : (
+                      <button type="submit" className="btn btn-success" disabled={isScanning}>
+                        {isScanning ? 'Processing FaceID...' : <>
+                          <UserCheck size={16} /> Record Clock-In
+                        </>}
+                      </button>
+                    )}
+                    <button 
+                      type="button" 
+                      className="btn btn-outline" 
+                      onClick={() => { setSelectedUser(null); setTerminalSearch(''); }}
+                      style={{ width: '40%' }}
+                      disabled={isScanning}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div style={{ padding: '3.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)', border: '1px dashed var(--card-border)', borderRadius: 'var(--radius-md)' }}>
+                  <MapPin size={32} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                  <p style={{ fontSize: '0.95rem' }}>Search and select a profile above to initiate a Clock-in or Clock-out log.</p>
+                </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
+      )}
 
         {/* 2. STUDENTS TAB */}
         {activeTab === 'students' && (
@@ -2006,31 +2006,31 @@ export default function App() {
                 <p>Manage enrolled students details, view logs, and add new registrations.</p>
               </div>
               <div className="header-actions">
-                <input
-                  type="file"
-                  accept=".csv"
-                  id="student-import-input"
-                  style={{ display: 'none' }}
-                  onChange={(e) => handleImportCSV(e, 'student')}
+                <input 
+                  type="file" 
+                  accept=".csv" 
+                  id="student-import-input" 
+                  style={{ display: 'none' }} 
+                  onChange={(e) => handleImportCSV(e, 'student')} 
                 />
-                <button
-                  className="btn btn-outline"
+                <button 
+                  className="btn btn-outline" 
                   style={{ width: 'auto' }}
                   onClick={() => document.getElementById('student-import-input').click()}
                 >
                   Import Excel/CSV
                 </button>
-                <button
-                  className="btn btn-outline"
+                <button 
+                  className="btn btn-outline" 
                   style={{ width: 'auto' }}
                   onClick={() => handleExportCSV('student')}
                 >
                   Export to Excel
                 </button>
                 {selectedStudentIds.length > 0 && (
-                  <button
-                    className="btn btn-danger"
-                    style={{ width: 'auto' }}
+                  <button 
+                    className="btn btn-danger" 
+                    style={{ width: 'auto' }} 
                     onClick={handleBulkDeleteStudents}
                   >
                     <Trash2 size={16} style={{ marginRight: '0.4rem' }} /> Delete Selected ({selectedStudentIds.length})
@@ -2045,9 +2045,9 @@ export default function App() {
             {/* Filter controls */}
             <div className="card filter-bar">
               <div className="filter-search" style={{ position: 'relative' }}>
-                <input
-                  type="text"
-                  className="form-input"
+                <input 
+                  type="text" 
+                  className="form-input" 
                   style={{ paddingLeft: '2.5rem' }}
                   placeholder="Search by Name, ID, or Phone..."
                   value={studentSearch}
@@ -2057,7 +2057,7 @@ export default function App() {
               </div>
 
               <div>
-                <select
+                <select 
                   className="form-select"
                   value={studentDeptFilter}
                   onChange={(e) => setStudentDeptFilter(e.target.value)}
@@ -2065,18 +2065,12 @@ export default function App() {
                   <option value="">All Departments</option>
                   <option value="Phonics">Phonics</option>
                   <option value="Handwriting">Handwriting</option>
-                  <option value="Tuition">Tuition</option>
-                  <option value="Hindi">Hindi</option>
-                  <option value="Tamil">Tamil</option>
-                  <option value="Grammar">Grammar</option>
-                  <option value="Spoken English">Spoken English</option>
-                  <option value="Administration">Administration</option>
                 </select>
               </div>
 
               <div>
-                <input
-                  type="text"
+                <input 
+                  type="text" 
                   className="form-input"
                   placeholder="Filter by Batch (e.g. 2026)..."
                   value={studentBatchFilter}
@@ -2085,9 +2079,9 @@ export default function App() {
               </div>
 
               {(studentSearch || studentDeptFilter || studentBatchFilter) && (
-                <button
+                <button 
                   type="button"
-                  className="btn btn-outline"
+                  className="btn btn-outline" 
                   style={{ width: 'auto', padding: '0.6rem 1rem' }}
                   onClick={() => {
                     setStudentSearch('');
@@ -2106,8 +2100,8 @@ export default function App() {
                 <thead>
                   <tr>
                     <th style={{ width: '40px' }}>
-                      <input
-                        type="checkbox"
+                      <input 
+                        type="checkbox" 
                         checked={students.length > 0 && selectedStudentIds.length === students.length}
                         onChange={(e) => {
                           if (e.target.checked) {
@@ -2132,8 +2126,8 @@ export default function App() {
                     paginatedStudents.map(student => (
                       <tr key={student.id} className={selectedStudentIds.includes(student.id) ? 'selected-row' : ''}>
                         <td>
-                          <input
-                            type="checkbox"
+                          <input 
+                            type="checkbox" 
                             checked={selectedStudentIds.includes(student.id)}
                             onChange={(e) => {
                               if (e.target.checked) {
@@ -2154,15 +2148,15 @@ export default function App() {
                         </td>
                         <td style={{ textAlign: 'right' }}>
                           <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                            <button
-                              className="btn btn-outline"
+                            <button 
+                              className="btn btn-outline" 
                               style={{ padding: '0.4rem', width: 'auto' }}
                               onClick={() => setStudentModal({ show: true, mode: 'edit', data: student })}
                             >
                               <Edit2 size={14} />
                             </button>
-                            <button
-                              className="btn btn-outline"
+                            <button 
+                              className="btn btn-outline" 
                               style={{ padding: '0.4rem', width: 'auto', borderColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--danger)' }}
                               onClick={() => handleDeleteStudent(student.id, student.name)}
                             >
@@ -2195,31 +2189,31 @@ export default function App() {
                 <p>Manage academic and laboratory staff profiles and registrations.</p>
               </div>
               <div className="header-actions">
-                <input
-                  type="file"
-                  accept=".csv"
-                  id="staff-import-input"
-                  style={{ display: 'none' }}
-                  onChange={(e) => handleImportCSV(e, 'staff')}
+                <input 
+                  type="file" 
+                  accept=".csv" 
+                  id="staff-import-input" 
+                  style={{ display: 'none' }} 
+                  onChange={(e) => handleImportCSV(e, 'staff')} 
                 />
-                <button
-                  className="btn btn-outline"
+                <button 
+                  className="btn btn-outline" 
                   style={{ width: 'auto' }}
                   onClick={() => document.getElementById('staff-import-input').click()}
                 >
                   Import Excel/CSV
                 </button>
-                <button
-                  className="btn btn-outline"
+                <button 
+                  className="btn btn-outline" 
                   style={{ width: 'auto' }}
                   onClick={() => handleExportCSV('staff')}
                 >
                   Export to Excel
                 </button>
                 {selectedStaffIds.length > 0 && (
-                  <button
-                    className="btn btn-danger"
-                    style={{ width: 'auto' }}
+                  <button 
+                    className="btn btn-danger" 
+                    style={{ width: 'auto' }} 
                     onClick={handleBulkDeleteStaff}
                   >
                     <Trash2 size={16} style={{ marginRight: '0.4rem' }} /> Delete Selected ({selectedStaffIds.length})
@@ -2234,9 +2228,9 @@ export default function App() {
             {/* Filter controls */}
             <div className="card filter-bar">
               <div className="filter-search" style={{ position: 'relative' }}>
-                <input
-                  type="text"
-                  className="form-input"
+                <input 
+                  type="text" 
+                  className="form-input" 
                   style={{ paddingLeft: '2.5rem' }}
                   placeholder="Search by Name, ID, or Phone..."
                   value={staffSearch}
@@ -2246,7 +2240,7 @@ export default function App() {
               </div>
 
               <div>
-                <select
+                <select 
                   className="form-select"
                   value={staffDeptFilter}
                   onChange={(e) => setStaffDeptFilter(e.target.value)}
@@ -2254,19 +2248,14 @@ export default function App() {
                   <option value="">All Departments</option>
                   <option value="Phonics">Phonics</option>
                   <option value="Handwriting">Handwriting</option>
-                  <option value="Tuition">Tuition</option>
-                  <option value="Hindi">Hindi</option>
-                  <option value="Tamil">Tamil</option>
-                  <option value="Grammar">Grammar</option>
-                  <option value="Spoken English">Spoken English</option>
                   <option value="Administration">Administration</option>
                 </select>
               </div>
 
               {(staffSearch || staffDeptFilter) && (
-                <button
+                <button 
                   type="button"
-                  className="btn btn-outline"
+                  className="btn btn-outline" 
                   style={{ width: 'auto', padding: '0.6rem 1rem' }}
                   onClick={() => {
                     setStaffSearch('');
@@ -2284,8 +2273,8 @@ export default function App() {
                 <thead>
                   <tr>
                     <th style={{ width: '40px' }}>
-                      <input
-                        type="checkbox"
+                      <input 
+                        type="checkbox" 
                         checked={staff.length > 0 && selectedStaffIds.length === staff.length}
                         onChange={(e) => {
                           if (e.target.checked) {
@@ -2310,8 +2299,8 @@ export default function App() {
                     paginatedStaff.map(member => (
                       <tr key={member.id} className={selectedStaffIds.includes(member.id) ? 'selected-row' : ''}>
                         <td>
-                          <input
-                            type="checkbox"
+                          <input 
+                            type="checkbox" 
                             checked={selectedStaffIds.includes(member.id)}
                             onChange={(e) => {
                               if (e.target.checked) {
@@ -2332,15 +2321,15 @@ export default function App() {
                         </td>
                         <td style={{ textAlign: 'right' }}>
                           <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                            <button
-                              className="btn btn-outline"
+                            <button 
+                              className="btn btn-outline" 
                               style={{ padding: '0.4rem', width: 'auto' }}
                               onClick={() => setStaffModal({ show: true, mode: 'edit', data: member })}
                             >
                               <Edit2 size={14} />
                             </button>
-                            <button
-                              className="btn btn-outline"
+                            <button 
+                              className="btn btn-outline" 
                               style={{ padding: '0.4rem', width: 'auto', borderColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--danger)' }}
                               onClick={() => handleDeleteStaff(member.id, member.name)}
                             >
@@ -2381,9 +2370,9 @@ export default function App() {
                   <Download size={16} /> Export to Excel
                 </button>
                 {selectedLogIds.length > 0 && (
-                  <button
-                    className="btn btn-danger"
-                    style={{ width: 'auto' }}
+                  <button 
+                    className="btn btn-danger" 
+                    style={{ width: 'auto' }} 
                     onClick={handleBulkDeleteLogs}
                   >
                     <Trash2 size={16} style={{ marginRight: '0.4rem' }} /> Delete Selected ({selectedLogIds.length})
@@ -2398,9 +2387,9 @@ export default function App() {
             {/* Filter controls */}
             <div className="card filter-bar">
               <div className="filter-search" style={{ position: 'relative' }}>
-                <input
-                  type="text"
-                  className="form-input"
+                <input 
+                  type="text" 
+                  className="form-input" 
                   style={{ paddingLeft: '2.5rem' }}
                   placeholder="Search by Name or ID..."
                   value={logFilter.search}
@@ -2410,7 +2399,7 @@ export default function App() {
               </div>
 
               <div>
-                <select
+                <select 
                   className="form-select"
                   value={logFilter.userType}
                   onChange={(e) => setLogFilter(prev => ({ ...prev, userType: e.target.value }))}
@@ -2422,7 +2411,7 @@ export default function App() {
               </div>
 
               <div>
-                <select
+                <select 
                   className="form-select"
                   value={logFilter.checkedIn}
                   onChange={(e) => setLogFilter(prev => ({ ...prev, checkedIn: e.target.value }))}
@@ -2435,9 +2424,9 @@ export default function App() {
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>From</span>
-                <input
-                  type="date"
-                  className="form-input"
+                <input 
+                  type="date" 
+                  className="form-input" 
                   style={{ padding: '0.5rem 0.75rem', fontSize: '0.85rem' }}
                   value={logFilter.startDate}
                   onChange={(e) => setLogFilter(prev => ({ ...prev, startDate: e.target.value }))}
@@ -2446,9 +2435,9 @@ export default function App() {
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>To</span>
-                <input
-                  type="date"
-                  className="form-input"
+                <input 
+                  type="date" 
+                  className="form-input" 
                   style={{ padding: '0.5rem 0.75rem', fontSize: '0.85rem' }}
                   value={logFilter.endDate}
                   onChange={(e) => setLogFilter(prev => ({ ...prev, endDate: e.target.value }))}
@@ -2456,8 +2445,8 @@ export default function App() {
               </div>
 
               {(logFilter.userType || logFilter.checkedIn || logFilter.startDate || logFilter.endDate || logFilter.search) && (
-                <button
-                  className="btn btn-outline"
+                <button 
+                  className="btn btn-outline" 
                   style={{ width: 'auto', padding: '0.6rem 1rem' }}
                   onClick={() => setLogFilter({ userType: '', checkedIn: '', startDate: '', endDate: '', search: '' })}
                 >
@@ -2472,8 +2461,8 @@ export default function App() {
                 <thead>
                   <tr>
                     <th style={{ width: '40px' }}>
-                      <input
-                        type="checkbox"
+                      <input 
+                        type="checkbox" 
                         checked={logs.length > 0 && selectedLogIds.length === logs.length}
                         onChange={(e) => {
                           if (e.target.checked) {
@@ -2503,8 +2492,8 @@ export default function App() {
                     paginatedLogs.map(log => (
                       <tr key={log.id} className={selectedLogIds.includes(log.id) ? 'selected-row' : ''}>
                         <td>
-                          <input
-                            type="checkbox"
+                          <input 
+                            type="checkbox" 
                             checked={selectedLogIds.includes(log.id)}
                             onChange={(e) => {
                               if (e.target.checked) {
@@ -2529,10 +2518,10 @@ export default function App() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}>
                             <span>{formatDateTime(log.check_in)}</span>
                             {log.latitude_in && (
-                              <a
+                              <a 
                                 href={`https://www.google.com/maps/search/?api=1&query=${log.latitude_in},${log.longitude_in}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                                target="_blank" 
+                                rel="noopener noreferrer" 
                                 className="map-link-btn"
                                 title="View Clock-In GPS Location"
                               >
@@ -2546,10 +2535,10 @@ export default function App() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}>
                               <span>{formatDateTime(log.check_out)}</span>
                               {log.latitude_out && (
-                                <a
+                                <a 
                                   href={`https://www.google.com/maps/search/?api=1&query=${log.latitude_out},${log.longitude_out}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
                                   className="map-link-btn"
                                   title="View Clock-Out GPS Location"
                                 >
@@ -2558,8 +2547,8 @@ export default function App() {
                               )}
                             </div>
                           ) : (
-                            <button
-                              className="btn btn-success"
+                            <button 
+                              className="btn btn-success" 
                               style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', borderRadius: '4px', width: 'auto' }}
                               onClick={() => handleTableCheckOut(log.id, log.name)}
                             >
@@ -2570,23 +2559,23 @@ export default function App() {
                         <td>
                           <div className="photo-thumbnail-container" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             {log.photo_in ? (
-                              <img
-                                src={log.photo_in}
-                                alt="In Face"
-                                className="photo-thumbnail"
+                              <img 
+                                src={log.photo_in} 
+                                alt="In Face" 
+                                className="photo-thumbnail" 
                                 title="Click to view Clock-In Photo"
-                                onClick={() => setLightboxPhoto({ photo: log.photo_in, title: log.name, date: log.check_in, type: 'Clock In' })}
+                                onClick={() => setLightboxPhoto({ photo: log.photo_in, title: log.name, date: log.check_in, type: 'Clock In' })} 
                               />
                             ) : (
                               <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>No In Photo</span>
                             )}
                             {log.photo_out ? (
-                              <img
-                                src={log.photo_out}
-                                alt="Out Face"
-                                className="photo-thumbnail"
+                              <img 
+                                src={log.photo_out} 
+                                alt="Out Face" 
+                                className="photo-thumbnail" 
                                 title="Click to view Clock-Out Photo"
-                                onClick={() => setLightboxPhoto({ photo: log.photo_out, title: log.name, date: log.check_out, type: 'Clock Out' })}
+                                onClick={() => setLightboxPhoto({ photo: log.photo_out, title: log.name, date: log.check_out, type: 'Clock Out' })} 
                               />
                             ) : log.check_out ? (
                               <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>No Out Photo</span>
@@ -2600,8 +2589,8 @@ export default function App() {
                           </span>
                         </td>
                         <td style={{ textAlign: 'right' }}>
-                          <button
-                            className="btn btn-outline"
+                          <button 
+                            className="btn btn-outline" 
                             style={{ padding: '0.4rem', width: 'auto', borderColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--danger)' }}
                             onClick={() => handleDeleteLog(log.id)}
                           >
@@ -2642,15 +2631,15 @@ export default function App() {
                 <XCircle size={20} />
               </button>
             </div>
-
+            
             <form onSubmit={handleStudentSubmit}>
               <div className="form-group">
                 <label className="form-label">Student ID (Roll Number)</label>
-                <input
-                  type="text"
-                  name="student_id"
-                  required
-                  className="form-input"
+                <input 
+                  type="text" 
+                  name="student_id" 
+                  required 
+                  className="form-input" 
                   placeholder="e.g. STU004"
                   defaultValue={studentModal.data ? studentModal.data.student_id : ''}
                   readOnly={true}
@@ -2659,11 +2648,11 @@ export default function App() {
 
               <div className="form-group">
                 <label className="form-label">Full Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  required
-                  className="form-input"
+                <input 
+                  type="text" 
+                  name="name" 
+                  required 
+                  className="form-input" 
                   placeholder="e.g. Rahul Verma"
                   defaultValue={studentModal.mode === 'edit' ? studentModal.data.name : ''}
                 />
@@ -2671,11 +2660,11 @@ export default function App() {
 
               <div className="form-group">
                 <label className="form-label">Phone Number</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  required
-                  className="form-input"
+                <input 
+                  type="tel" 
+                  name="phone" 
+                  required 
+                  className="form-input" 
                   placeholder="e.g. +91 98765 43210"
                   defaultValue={studentModal.mode === 'edit' ? studentModal.data.phone : ''}
                 />
@@ -2683,30 +2672,24 @@ export default function App() {
 
               <div className="form-group">
                 <label className="form-label">Department</label>
-                <select
-                  name="department"
-                  required
+                <select 
+                  name="department" 
+                  required 
                   className="form-select"
                   defaultValue={studentModal.mode === 'edit' ? studentModal.data.department : 'Phonics'}
                 >
                   <option value="Phonics">Phonics</option>
                   <option value="Handwriting">Handwriting</option>
-                  <option value="Tuition">Tuition</option>
-                  <option value="Hindi">Hindi</option>
-                  <option value="Tamil">Tamil</option>
-                  <option value="Grammar">Grammar</option>
-                  <option value="Spoken English">Spoken English</option>
-                  <option value="Administration">Administration</option>
                 </select>
               </div>
 
               <div className="form-group">
                 <label className="form-label">Batch (Academic Years)</label>
-                <input
-                  type="text"
-                  name="batch"
-                  required
-                  className="form-input"
+                <input 
+                  type="text" 
+                  name="batch" 
+                  required 
+                  className="form-input" 
                   placeholder="e.g. 2023-2027"
                   defaultValue={studentModal.mode === 'edit' ? studentModal.data.batch : ''}
                 />
@@ -2716,9 +2699,9 @@ export default function App() {
                 <button type="submit" className="btn btn-primary">
                   {studentModal.mode === 'edit' ? 'Update Details' : 'Register Student'}
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-outline"
+                <button 
+                  type="button" 
+                  className="btn btn-outline" 
                   onClick={() => setStudentModal({ show: false, mode: 'add', data: null })}
                 >
                   Cancel
@@ -2741,15 +2724,15 @@ export default function App() {
                 <XCircle size={20} />
               </button>
             </div>
-
+            
             <form onSubmit={handleStaffSubmit}>
               <div className="form-group">
                 <label className="form-label">Staff ID</label>
-                <input
-                  type="text"
-                  name="staff_id"
-                  required
-                  className="form-input"
+                <input 
+                  type="text" 
+                  name="staff_id" 
+                  required 
+                  className="form-input" 
                   placeholder="e.g. STF003"
                   defaultValue={staffModal.data ? staffModal.data.staff_id : ''}
                   readOnly={true}
@@ -2758,11 +2741,11 @@ export default function App() {
 
               <div className="form-group">
                 <label className="form-label">Full Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  required
-                  className="form-input"
+                <input 
+                  type="text" 
+                  name="name" 
+                  required 
+                  className="form-input" 
                   placeholder="e.g. Dr. Kavita Rao"
                   defaultValue={staffModal.mode === 'edit' ? staffModal.data.name : ''}
                 />
@@ -2770,11 +2753,11 @@ export default function App() {
 
               <div className="form-group">
                 <label className="form-label">Phone Number</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  required
-                  className="form-input"
+                <input 
+                  type="tel" 
+                  name="phone" 
+                  required 
+                  className="form-input" 
                   placeholder="e.g. +91 98765 43210"
                   defaultValue={staffModal.mode === 'edit' ? staffModal.data.phone : ''}
                 />
@@ -2782,30 +2765,25 @@ export default function App() {
 
               <div className="form-group">
                 <label className="form-label">Department</label>
-                <select
-                  name="department"
-                  required
+                <select 
+                  name="department" 
+                  required 
                   className="form-select"
                   defaultValue={staffModal.mode === 'edit' ? staffModal.data.department : 'Phonics'}
                 >
                   <option value="Phonics">Phonics</option>
                   <option value="Handwriting">Handwriting</option>
-                  <option value="Tuition">Tuition</option>
-                  <option value="Hindi">Hindi</option>
-                  <option value="Tamil">Tamil</option>
-                  <option value="Grammar">Grammar</option>
-                  <option value="Spoken English">Spoken English</option>
                   <option value="Administration">Administration</option>
                 </select>
               </div>
 
               <div className="form-group">
                 <label className="form-label">Designation / Role</label>
-                <input
-                  type="text"
-                  name="designation"
-                  required
-                  className="form-input"
+                <input 
+                  type="text" 
+                  name="designation" 
+                  required 
+                  className="form-input" 
                   placeholder="e.g. Associate Professor, HOD"
                   defaultValue={staffModal.mode === 'edit' ? staffModal.data.designation : ''}
                 />
@@ -2815,9 +2793,9 @@ export default function App() {
                 <button type="submit" className="btn btn-primary">
                   {staffModal.mode === 'edit' ? 'Update Details' : 'Register Staff'}
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-outline"
+                <button 
+                  type="button" 
+                  className="btn btn-outline" 
                   onClick={() => setStaffModal({ show: false, mode: 'add', data: null })}
                 >
                   Cancel
@@ -2838,11 +2816,11 @@ export default function App() {
                 <XCircle size={20} />
               </button>
             </div>
-
+            
             <form onSubmit={handleManualLogSubmit}>
               <div className="form-group" style={{ position: 'relative' }}>
                 <label className="form-label">Select User (Student or Staff)</label>
-
+                
                 {/* Search Input Box / Selected User Display */}
                 <div style={{ position: 'relative' }}>
                   <input
@@ -2884,18 +2862,18 @@ export default function App() {
                 </div>
 
                 {/* Hidden input to pass value during submit */}
-                <input
-                  type="hidden"
-                  name="manual_user"
-                  value={selectedManualUser ? `${selectedManualUser.type}:${selectedManualUser.id}` : ''}
-                  required
+                <input 
+                  type="hidden" 
+                  name="manual_user" 
+                  value={selectedManualUser ? `${selectedManualUser.type}:${selectedManualUser.id}` : ''} 
+                  required 
                 />
 
                 {/* Dropdown Options List */}
                 {isManualUserDropdownOpen && (
                   <>
                     {/* Overlay to close the dropdown when clicking outside */}
-                    <div
+                    <div 
                       style={{
                         position: 'fixed',
                         top: 0,
@@ -2906,7 +2884,7 @@ export default function App() {
                       }}
                       onClick={() => setIsManualUserDropdownOpen(false)}
                     />
-
+                    
                     <div className="card" style={{
                       position: 'absolute',
                       top: '100%',
@@ -2921,7 +2899,7 @@ export default function App() {
                       border: '1px solid var(--card-border)',
                       borderRadius: 'var(--radius-md)'
                     }}>
-
+                      
                       {filteredManualStudents.length === 0 && filteredManualStaff.length === 0 ? (
                         <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                           No matching users found
@@ -2930,11 +2908,11 @@ export default function App() {
                         <>
                           {filteredManualStudents.length > 0 && (
                             <div>
-                              <div style={{
-                                padding: '0.4rem 0.8rem',
-                                background: 'rgba(255, 73, 121, 0.05)',
-                                color: 'var(--primary)',
-                                fontSize: '0.75rem',
+                              <div style={{ 
+                                padding: '0.4rem 0.8rem', 
+                                background: 'rgba(255, 73, 121, 0.05)', 
+                                color: 'var(--primary)', 
+                                fontSize: '0.75rem', 
                                 fontWeight: 700,
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.05em'
@@ -2975,11 +2953,11 @@ export default function App() {
 
                           {filteredManualStaff.length > 0 && (
                             <div>
-                              <div style={{
-                                padding: '0.4rem 0.8rem',
-                                background: 'rgba(124, 58, 237, 0.05)',
-                                color: 'var(--secondary)',
-                                fontSize: '0.75rem',
+                              <div style={{ 
+                                padding: '0.4rem 0.8rem', 
+                                background: 'rgba(124, 58, 237, 0.05)', 
+                                color: 'var(--secondary)', 
+                                fontSize: '0.75rem', 
                                 fontWeight: 700,
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.05em'
@@ -3092,17 +3070,17 @@ export default function App() {
               {confirmModal.message}
             </div>
             <div className="btn-group" style={{ marginTop: 0, justifyContent: 'flex-end', gap: '0.75rem' }}>
-              <button
-                type="button"
-                className="btn btn-outline"
+              <button 
+                type="button" 
+                className="btn btn-outline" 
                 onClick={closeConfirm}
                 style={{ width: 'auto', padding: '0.6rem 1.25rem' }}
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                className="btn btn-danger"
+              <button 
+                type="button" 
+                className="btn btn-danger" 
                 onClick={() => { confirmModal.onConfirm(); closeConfirm(); }}
                 style={{ width: 'auto', padding: '0.6rem 1.25rem' }}
               >
