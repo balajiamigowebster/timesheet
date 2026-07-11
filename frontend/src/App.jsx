@@ -1879,7 +1879,7 @@ export default function App() {
                           border: 'none',
                           cursor: 'pointer',
                           background: notificationChannel === 'whatsapp' ? 'var(--primary)' : 'transparent',
-                          color: '#fff',
+                          color: notificationChannel === 'whatsapp' ? '#fff' : 'var(--text-primary)',
                           fontWeight: notificationChannel === 'whatsapp' ? 700 : 'normal',
                           transition: 'all 0.2s',
                           width: 'auto'
@@ -1897,7 +1897,7 @@ export default function App() {
                           border: 'none',
                           cursor: 'pointer',
                           background: notificationChannel === 'sms' ? 'var(--primary)' : 'transparent',
-                          color: '#fff',
+                          color: notificationChannel === 'sms' ? '#fff' : 'var(--text-primary)',
                           fontWeight: notificationChannel === 'sms' ? 700 : 'normal',
                           transition: 'all 0.2s',
                           width: 'auto'
