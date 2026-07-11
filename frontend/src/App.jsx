@@ -129,6 +129,11 @@ export default function App() {
   const [terminalPurpose, setTerminalPurpose] = useState('General');
   const [terminalNotes, setTerminalNotes] = useState('');
   const [activeCheckInRecord, setActiveCheckInRecord] = useState(null);
+  const [notificationChannel, setNotificationChannel] = useState(localStorage.getItem('notificationChannel') || 'whatsapp');
+
+  useEffect(() => {
+    localStorage.setItem('notificationChannel', notificationChannel);
+  }, [notificationChannel]);
 
   // Phase 2 Geolocation and FaceID states
   const [location, setLocation] = useState(null);
@@ -523,6 +528,25 @@ export default function App() {
     return `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
   };
 
+  const getSMSUrl = (actionType, user, rawDateTime) => {
+    if (!user || !user.phone) return null;
+
+    // Clean up phone number
+    let cleanPhone = user.phone.replace(/[\s\-()]/g, '');
+    // Auto-prepend default country code (91 for India) if phone is exactly 10 digits
+    if (cleanPhone.length === 10 && /^\d+$/.test(cleanPhone)) {
+      cleanPhone = '91' + cleanPhone;
+    }
+
+    const { timeStr, dateStr } = formatWhatsAppDateTime(rawDateTime);
+
+    const message = actionType === 'in'
+      ? `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked in at ${timeStr} on ${dateStr} - Madhu's Phonics & Handwriting....Thank you\n\nFor more info: www.madhusphonics.in.`
+      : `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked out at ${timeStr} on ${dateStr} - Madhu's Phonics & Handwriting....Thank you\n\nFor more info: www.madhusphonics.in.`;
+
+    return `sms:${cleanPhone}?body=${encodeURIComponent(message)}`;
+  };
+
   const executeCheckIn = async (photoBase64) => {
     try {
       const res = await fetch(`${API_URL}/timesheet/check-in`, {
@@ -544,8 +568,10 @@ export default function App() {
       if (res.ok) {
         showAlert(`Successfully clocked-in ${selectedUser.name}`);
 
-        // Trigger WhatsApp Redirect directly without opening a new tab
-        const url = getWhatsAppUrl('in', selectedUser, data.check_in || new Date().toLocaleTimeString());
+        // Trigger WhatsApp/SMS Redirect directly without opening a new tab
+        const url = notificationChannel === 'sms'
+          ? getSMSUrl('in', selectedUser, data.check_in || new Date().toLocaleTimeString())
+          : getWhatsAppUrl('in', selectedUser, data.check_in || new Date().toLocaleTimeString());
         if (url) {
           window.location.href = url;
         }
@@ -594,8 +620,10 @@ export default function App() {
       if (res.ok) {
         showAlert(`Successfully clocked-out ${selectedUser.name}`);
 
-        // Trigger WhatsApp Redirect directly without opening a new tab
-        const url = getWhatsAppUrl('out', selectedUser, data.check_out || new Date().toLocaleTimeString());
+        // Trigger WhatsApp/SMS Redirect directly without opening a new tab
+        const url = notificationChannel === 'sms'
+          ? getSMSUrl('out', selectedUser, data.check_out || new Date().toLocaleTimeString())
+          : getWhatsAppUrl('out', selectedUser, data.check_out || new Date().toLocaleTimeString());
         if (url) {
           window.location.href = url;
         }
@@ -699,7 +727,11 @@ export default function App() {
           if (cleanPhone.length === 10 && /^\d+$/.test(cleanPhone)) {
             cleanPhone = '91' + cleanPhone;
           }
-          window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
+          if (notificationChannel === 'sms') {
+            window.location.href = `sms:${cleanPhone}?body=${encodeURIComponent(msg)}`;
+          } else {
+            window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
+          }
         }
 
         fetchStats();
@@ -898,7 +930,11 @@ export default function App() {
           if (cleanPhone.length === 10 && /^\d+$/.test(cleanPhone)) {
             cleanPhone = '91' + cleanPhone;
           }
-          window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
+          if (notificationChannel === 'sms') {
+            window.location.href = `sms:${cleanPhone}?body=${encodeURIComponent(msg)}`;
+          } else {
+            window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
+          }
         }
 
         fetchLogs();
@@ -1823,12 +1859,52 @@ export default function App() {
 
             <div style={{ maxWidth: '650px', margin: '0 auto' }}>
               <div className="card">
-                <div className="terminal-header">
+                <div className="terminal-header" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div className="terminal-title">
                     <div className="indicator-dot"></div>
                     <span>Live Clock-In & Clock-Out Terminal</span>
                   </div>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Console Online</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ display: 'inline-flex', background: 'rgba(255, 255, 255, 0.05)', padding: '0.2rem', borderRadius: '6px', border: '1px solid var(--card-border)' }}>
+                      <button
+                        type="button"
+                        onClick={() => setNotificationChannel('whatsapp')}
+                        style={{
+                          padding: '0.25rem 0.6rem',
+                          fontSize: '0.75rem',
+                          borderRadius: '4px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          background: notificationChannel === 'whatsapp' ? 'var(--primary)' : 'transparent',
+                          color: '#fff',
+                          fontWeight: notificationChannel === 'whatsapp' ? 700 : 'normal',
+                          transition: 'all 0.2s',
+                          width: 'auto'
+                        }}
+                      >
+                        WhatsApp
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNotificationChannel('sms')}
+                        style={{
+                          padding: '0.25rem 0.6rem',
+                          fontSize: '0.75rem',
+                          borderRadius: '4px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          background: notificationChannel === 'sms' ? 'var(--primary)' : 'transparent',
+                          color: '#fff',
+                          fontWeight: notificationChannel === 'sms' ? 700 : 'normal',
+                          transition: 'all 0.2s',
+                          width: 'auto'
+                        }}
+                      >
+                        SMS
+                      </button>
+                    </div>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Console Online</span>
+                  </div>
                 </div>
 
                 <div ref={searchRef} style={{ position: 'relative', marginBottom: '1.25rem' }}>
