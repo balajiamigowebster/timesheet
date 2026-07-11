@@ -334,7 +334,11 @@ app.get('/api/timesheet/logs', async (req, res) => {
       CASE 
         WHEN t.user_type = 'student' THEN s.department
         WHEN t.user_type = 'staff' THEN st.department
-      END as department
+      END as department,
+      CASE 
+        WHEN t.user_type = 'student' THEN s.phone
+        WHEN t.user_type = 'staff' THEN st.phone
+      END as phone
     FROM timesheet_entries t
     LEFT JOIN students s ON t.student_ref_id = s.id AND t.user_type = 'student'
     LEFT JOIN staff st ON t.staff_ref_id = st.id AND t.user_type = 'staff'

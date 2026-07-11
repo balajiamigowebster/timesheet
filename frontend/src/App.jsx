@@ -866,15 +866,29 @@ export default function App() {
     );
   };
 
-  const handleTableCheckOut = async (entryId, name) => {
+  const handleTableCheckOut = async (log) => {
     try {
       const res = await fetch(`${API_URL}/timesheet/check-out`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entry_id: entryId })
+        body: JSON.stringify({ entry_id: log.id })
       });
       if (res.ok) {
-        showAlert(`Clocked-out ${name}`);
+        const data = await res.json();
+        showAlert(`Clocked-out ${log.name}`);
+        
+        // Trigger WhatsApp Redirect directly without opening a new tab
+        if (log.phone) {
+          const checkOutTime = data.check_out || new Date().toISOString();
+          const { timeStr, dateStr } = formatWhatsAppDateTime(checkOutTime);
+          const msg = `*From Madhusphonics*\n\nHello ${log.name}, you have successfully checked out at ${timeStr} on ${dateStr} - Madhu's Phonics & Handwriting....Thank you\n\nFor more info: www.madhusphonics.in.`;
+          let cleanPhone = log.phone.replace(/[\s\-()]/g, '');
+          if (cleanPhone.length === 10 && /^\d+$/.test(cleanPhone)) {
+            cleanPhone = '91' + cleanPhone;
+          }
+          window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
+        }
+
         fetchLogs();
         fetchStats();
       } else {
@@ -2561,7 +2575,7 @@ export default function App() {
                             <button
                               className="btn btn-success"
                               style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', borderRadius: '4px', width: 'auto' }}
-                              onClick={() => handleTableCheckOut(log.id, log.name)}
+                              onClick={() => handleTableCheckOut(log)}
                             >
                               Clock Out
                             </button>
