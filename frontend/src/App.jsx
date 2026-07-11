@@ -528,15 +528,18 @@ export default function App() {
     return `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
   };
 
-  const getSMSUrl = (actionType, user, rawDateTime) => {
-    if (!user || !user.phone) return null;
-
-    // Clean up phone number
-    let cleanPhone = user.phone.replace(/[\s\-()]/g, '');
-    // Auto-prepend default country code (91 for India) if phone is exactly 10 digits
+  const getSMSHref = (phone, message) => {
+    let cleanPhone = phone.replace(/[\s\-()]/g, '');
     if (cleanPhone.length === 10 && /^\d+$/.test(cleanPhone)) {
       cleanPhone = '91' + cleanPhone;
     }
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const separator = isIOS ? '&' : '?';
+    return `sms:${cleanPhone}${separator}body=${encodeURIComponent(message)}`;
+  };
+
+  const getSMSUrl = (actionType, user, rawDateTime) => {
+    if (!user || !user.phone) return null;
 
     const { timeStr, dateStr } = formatWhatsAppDateTime(rawDateTime);
 
@@ -544,7 +547,7 @@ export default function App() {
       ? `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked in at ${timeStr} on ${dateStr} - Madhu's Phonics & Handwriting....Thank you\n\nFor more info: www.madhusphonics.in.`
       : `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked out at ${timeStr} on ${dateStr} - Madhu's Phonics & Handwriting....Thank you\n\nFor more info: www.madhusphonics.in.`;
 
-    return `sms:${cleanPhone}?body=${encodeURIComponent(message)}`;
+    return getSMSHref(user.phone, message);
   };
 
   const executeCheckIn = async (photoBase64) => {
@@ -728,7 +731,7 @@ export default function App() {
             cleanPhone = '91' + cleanPhone;
           }
           if (notificationChannel === 'sms') {
-            window.location.href = `sms:${cleanPhone}?body=${encodeURIComponent(msg)}`;
+            window.location.href = getSMSHref(user.phone, msg);
           } else {
             window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
           }
@@ -931,7 +934,7 @@ export default function App() {
             cleanPhone = '91' + cleanPhone;
           }
           if (notificationChannel === 'sms') {
-            window.location.href = `sms:${cleanPhone}?body=${encodeURIComponent(msg)}`;
+            window.location.href = getSMSHref(userPhone, msg);
           } else {
             window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
           }
