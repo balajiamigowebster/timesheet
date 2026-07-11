@@ -517,7 +517,7 @@ export default function App() {
     const { timeStr, dateStr } = formatWhatsAppDateTime(rawDateTime);
 
     const message = actionType === 'in'
-      ? `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked in at ${timeStr} on ${dateStr} for ${terminalPurpose || 'General'} - Madhu's Phonics & Handwriting....Thank you\n\nFor more info: www.madhusphonics.in.`
+      ? `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked in at ${timeStr} on ${dateStr} - Madhu's Phonics & Handwriting....Thank you\n\nFor more info: www.madhusphonics.in.`
       : `*From Madhusphonics*\n\nHello ${user.name}, you have successfully checked out at ${timeStr} on ${dateStr} - Madhu's Phonics & Handwriting....Thank you\n\nFor more info: www.madhusphonics.in.`;
 
     return `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
