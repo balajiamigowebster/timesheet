@@ -136,18 +136,6 @@ export default function App() {
     localStorage.setItem('notificationChannel', notificationChannel);
   }, [notificationChannel]);
 
-  // SMS Gateway Config States
-  const [smsGateway, setSmsGateway] = useState(localStorage.getItem('smsGateway') || 'none');
-  const [textbeeApiKey, setTextbeeApiKey] = useState(localStorage.getItem('textbeeApiKey') || '');
-  const [textbeeDeviceId, setTextbeeDeviceId] = useState(localStorage.getItem('textbeeDeviceId') || '');
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-
-  useEffect(() => {
-    localStorage.setItem('smsGateway', smsGateway);
-    localStorage.setItem('textbeeApiKey', textbeeApiKey);
-    localStorage.setItem('textbeeDeviceId', textbeeDeviceId);
-  }, [smsGateway, textbeeApiKey, textbeeDeviceId]);
-
   // Phase 2 Geolocation and FaceID states
   const [location, setLocation] = useState(null);
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
@@ -563,47 +551,7 @@ export default function App() {
     return getSMSHref(user.phone, message);
   };
 
-  const triggerBackgroundSMS = async (phone, message) => {
-    if (smsGateway === 'textbee' && textbeeApiKey && textbeeDeviceId) {
-      let cleanPhone = phone.replace(/[\s\-()]/g, '');
-      if (cleanPhone.length === 10 && /^\d+$/.test(cleanPhone)) {
-        cleanPhone = '91' + cleanPhone;
-      }
-      if (!cleanPhone.startsWith('+')) {
-        cleanPhone = '+' + cleanPhone;
-      }
 
-      try {
-        const response = await fetch(
-          `https://api.textbee.dev/api/v1/gateway/devices/${textbeeDeviceId}/send-sms`,
-          {
-            method: 'POST',
-            headers: {
-              'x-api-key': textbeeApiKey,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              recipients: [cleanPhone],
-              message: message
-            }),
-          }
-        );
-        
-        if (response.ok) {
-          showAlert('SMS notification sent successfully via Textbee!');
-          return true;
-        } else {
-          const errData = await response.json().catch(() => ({}));
-          console.error('Textbee error:', errData);
-          showAlert(`SMS gateway error: ${errData.error || response.statusText}`, 'warning');
-        }
-      } catch (err) {
-        console.error('Failed to trigger Textbee:', err);
-        showAlert('SMS gateway connection failed', 'warning');
-      }
-    }
-    return false;
-  };
 
   const executeCheckIn = async (photoBase64) => {
     try {
@@ -627,20 +575,11 @@ export default function App() {
         showAlert(`Successfully clocked-in ${selectedUser.name}`);
 
         // Trigger WhatsApp/SMS Redirect directly without opening a new tab
-        let sentBackground = false;
-        if (notificationChannel === 'sms' && smsGateway === 'textbee') {
-          const { timeStr, dateStr } = formatWhatsAppDateTime(data.check_in || new Date());
-          const msg = `*From Madhusphonics*\n\nHello ${selectedUser.name}, you have successfully checked in at ${timeStr} on ${dateStr} - Madhu's Phonics & Handwriting....Thank you\n\nFor more info: www.madhusphonics.in.`;
-          sentBackground = await triggerBackgroundSMS(selectedUser.phone, msg);
-        }
-
-        if (!sentBackground) {
-          const url = notificationChannel === 'sms'
-            ? getSMSUrl('in', selectedUser, data.check_in || new Date().toLocaleTimeString())
-            : getWhatsAppUrl('in', selectedUser, data.check_in || new Date().toLocaleTimeString());
-          if (url) {
-            window.location.href = url;
-          }
+        const url = notificationChannel === 'sms'
+          ? getSMSUrl('in', selectedUser, data.check_in || new Date().toLocaleTimeString())
+          : getWhatsAppUrl('in', selectedUser, data.check_in || new Date().toLocaleTimeString());
+        if (url) {
+          window.location.href = url;
         }
 
         setSelectedUser(null);
@@ -688,20 +627,11 @@ export default function App() {
         showAlert(`Successfully clocked-out ${selectedUser.name}`);
 
         // Trigger WhatsApp/SMS Redirect directly without opening a new tab
-        let sentBackground = false;
-        if (notificationChannel === 'sms' && smsGateway === 'textbee') {
-          const { timeStr, dateStr } = formatWhatsAppDateTime(data.check_out || new Date());
-          const msg = `*From Madhusphonics*\n\nHello ${selectedUser.name}, you have successfully checked out at ${timeStr} on ${dateStr} - Madhu's Phonics & Handwriting....Thank you\n\nFor more info: www.madhusphonics.in.`;
-          sentBackground = await triggerBackgroundSMS(selectedUser.phone, msg);
-        }
-
-        if (!sentBackground) {
-          const url = notificationChannel === 'sms'
-            ? getSMSUrl('out', selectedUser, data.check_out || new Date().toLocaleTimeString())
-            : getWhatsAppUrl('out', selectedUser, data.check_out || new Date().toLocaleTimeString());
-          if (url) {
-            window.location.href = url;
-          }
+        const url = notificationChannel === 'sms'
+          ? getSMSUrl('out', selectedUser, data.check_out || new Date().toLocaleTimeString())
+          : getWhatsAppUrl('out', selectedUser, data.check_out || new Date().toLocaleTimeString());
+        if (url) {
+          window.location.href = url;
         }
 
         setSelectedUser(null);
@@ -803,17 +733,10 @@ export default function App() {
           if (cleanPhone.length === 10 && /^\d+$/.test(cleanPhone)) {
             cleanPhone = '91' + cleanPhone;
           }
-          let sentBackground = false;
-          if (notificationChannel === 'sms' && smsGateway === 'textbee') {
-            sentBackground = await triggerBackgroundSMS(user.phone, msg);
-          }
-
-          if (!sentBackground) {
-            if (notificationChannel === 'sms') {
-              window.location.href = getSMSHref(user.phone, msg);
-            } else {
-              window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
-            }
+          if (notificationChannel === 'sms') {
+            window.location.href = getSMSHref(user.phone, msg);
+          } else {
+            window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
           }
         }
 
@@ -1013,17 +936,10 @@ export default function App() {
           if (cleanPhone.length === 10 && /^\d+$/.test(cleanPhone)) {
             cleanPhone = '91' + cleanPhone;
           }
-          let sentBackground = false;
-          if (notificationChannel === 'sms' && smsGateway === 'textbee') {
-            sentBackground = await triggerBackgroundSMS(userPhone, msg);
-          }
-
-          if (!sentBackground) {
-            if (notificationChannel === 'sms') {
-              window.location.href = getSMSHref(userPhone, msg);
-            } else {
-              window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
-            }
+          if (notificationChannel === 'sms') {
+            window.location.href = getSMSHref(userPhone, msg);
+          } else {
+            window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
           }
         }
 
@@ -1801,17 +1717,9 @@ export default function App() {
             <span>Timesheet Logs</span>
           </div>
           <div
-            onClick={() => { setIsSettingsModalOpen(true); setIsMobileMenuOpen(false); }}
-            className="nav-item"
-            style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem' }}
-          >
-            <Settings size={18} />
-            <span>Settings</span>
-          </div>
-          <div
             onClick={handleLogout}
             className="nav-item"
-            style={{ color: '#f87171' }}
+            style={{ marginTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem', color: '#f87171' }}
           >
             <LogOut size={18} />
             <span>Logout</span>
@@ -3024,89 +2932,6 @@ export default function App() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* D. SMS GATEWAY CONFIGURATION SETTINGS MODAL */}
-      {isSettingsModalOpen && (
-        <div className="modal-overlay drawer">
-          <div className="modal-content" style={{ maxWidth: '500px' }}>
-            <div className="modal-header">
-              <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Settings size={22} className="animate-spin-slow" /> Notification Settings
-              </h2>
-              <button className="modal-close" onClick={() => setIsSettingsModalOpen(false)}>
-                <XCircle size={20} />
-              </button>
-            </div>
-
-            <div style={{ marginTop: '1rem' }}>
-              <div className="form-group">
-                <label className="form-label">Background SMS Gateway</label>
-                <select
-                  className="form-input"
-                  value={smsGateway}
-                  onChange={(e) => setSmsGateway(e.target.value)}
-                >
-                  <option value="none">None (Direct Mobile SMS App Redirect)</option>
-                  <option value="textbee">Textbee.dev (Free Background SMS Android SIM Gateway)</option>
-                </select>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem', lineHeight: '1.4' }}>
-                  Choose "Textbee.dev" if you want to turn a spare Android phone with a SIM card into an automated background text sender. Choose "None" to open your phone's native Messages app instead.
-                </p>
-              </div>
-
-              {smsGateway === 'textbee' && (
-                <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '1rem', borderRadius: '8px', border: '1px dashed var(--card-border)', marginBottom: '1.5rem' }}>
-                  <h4 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.8rem', color: 'var(--primary)' }}>Textbee.dev Connection Details</h4>
-                  
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: '1.4' }}>
-                    1. Go to <a href="https://textbee.dev" target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>textbee.dev</a> and sign up for a free account.
-                    <br />
-                    2. Install the Textbee Android App and scan your dashboard QR code to pair your device.
-                    <br />
-                    3. Copy your API Key and Device ID from your dashboard and paste them below:
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Textbee API Key</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="e.g. 5e917d5e-..."
-                      value={textbeeApiKey}
-                      onChange={(e) => setTextbeeApiKey(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group" style={{ marginBottom: '0' }}>
-                    <label className="form-label">Textbee Device ID</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="e.g. 64b8d76e..."
-                      value={textbeeDeviceId}
-                      onChange={(e) => setTextbeeDeviceId(e.target.value)}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="btn-group" style={{ marginTop: '2rem' }}>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => {
-                    setIsSettingsModalOpen(false);
-                    showAlert('Notification configurations saved successfully!');
-                  }}
-                  style={{ width: '100%' }}
-                >
-                  Save & Close
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       )}
