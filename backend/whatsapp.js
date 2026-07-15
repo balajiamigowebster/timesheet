@@ -123,6 +123,60 @@ function sendWhatsAppMessage(toPhone, message) {
       return;
     }
 
+    // 3. Option C: Meta WhatsApp Cloud API
+    if (process.env.META_PHONE_NUMBER_ID && process.env.META_ACCESS_TOKEN) {
+      const phoneNumberId = process.env.META_PHONE_NUMBER_ID;
+      const accessToken = process.env.META_ACCESS_TOKEN;
+
+      // Meta numbers must be in E.164 format without '+' symbol (e.g. 919876543210)
+      let formattedTo = cleanPhone.replace(/^\+/, '');
+
+      const postData = JSON.stringify({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: formattedTo,
+        type: 'text',
+        text: {
+          body: message
+        }
+      });
+
+      const options = {
+        hostname: 'graph.facebook.com',
+        port: 443,
+        path: `/v18.0/${phoneNumberId}/messages`,
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      };
+
+      const req = https.request(options, (res) => {
+        let body = '';
+        res.on('data', chunk => body += chunk);
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            console.log('Meta WhatsApp Cloud API notification sent successfully');
+            resolve(true);
+          } else {
+            console.error('Meta API returned error:', res.statusCode, body);
+            resolve(false);
+          }
+        });
+      });
+
+      req.on('error', (e) => {
+        console.error('Meta API Request error:', e);
+        resolve(false);
+      });
+
+      req.write(postData);
+      req.end();
+      return;
+    }
+
     console.warn('No WhatsApp API credentials configured in .env. Notification skipped.');
     resolve(false);
   });
